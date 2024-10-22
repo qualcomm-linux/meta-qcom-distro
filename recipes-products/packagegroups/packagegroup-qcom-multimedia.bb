@@ -12,6 +12,11 @@ PROVIDES = "${PACKAGES}"
 PACKAGES = "${PN}"
 
 RDEPENDS:${PN} = "\
+    gstreamer1.0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-rtsp-server \
     packagegroup-container \
     packagegroup-qcom-k8s \
     packagegroup-qcom-opencv \
