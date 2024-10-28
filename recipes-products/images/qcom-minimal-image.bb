@@ -4,7 +4,8 @@ LICENSE = "BSD-3-Clause-Clear"
 
 IMAGE_FEATURES += "splash tools-debug allow-root-login post-install-logging enable-adbd"
 
-inherit sota core-image features_check extrausers image-adbd image-qcom-deploy
+inherit core-image features_check extrausers image-adbd image-qcom-deploy
+inherit ${@bb.utils.contains('DISTRO_FEATURES', 'sota', 'sota image_types_ostree image_types_ota', '', d)}
 
 # selinux-image is inherited to utilize the selinux_set_labels API, to perform build-time context labeling.
 inherit  ${@bb.utils.contains('DISTRO_FEATURES', 'selinux', 'selinux-image', '', d)}
