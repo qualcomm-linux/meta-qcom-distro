@@ -35,6 +35,7 @@ RDEPENDS:${PN}:append:qcom-custom-distro = "\
 RDEPENDS:packagegroup-support-utils = "\
     can-utils \
     chrony \
+    dosfstools \
     ethtool \
     efivar \
     iproute2 \
