@@ -21,14 +21,13 @@ RDEPENDS:${PN} = "\
     packagegroup-container \
     packagegroup-qcom-k8s \
     packagegroup-qcom-opencv \
+    packagegroup-qcom-camera \
     python3-docker-compose \
     packagegroup-qcom-display \
     "
 
 RDEPENDS:${PN}:append:qcom-custom-distro = "\
     packagegroup-qcom-audio \
-    packagegroup-qcom-camera \
-    packagegroup-qcom-display \
     packagegroup-qcom-fastcv \
     packagegroup-qcom-graphics \
     packagegroup-qcom-iot-base-utils \
