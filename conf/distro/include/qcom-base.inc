@@ -1,4 +1,9 @@
-DISTRO_VERSION ??= "1.0"
+DISTRO_NAME = "Qualcomm Linux"
+
+DISTRO_VERSION = "1.3-ver.1.0"
+
+# Extend the version string of the Linux kernel to indicate distro
+LINUX_VERSION_EXTENSION = "-qli-${DISTRO_VERSION}"
 
 # Supported selections are: base, custom
 # We intend to use same selection as that of BSP by default.
