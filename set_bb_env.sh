@@ -179,7 +179,6 @@ if [ -z "${SDKMACHINE}" ]; then
 fi
 
 BUILDDIR="${WS}/build-$DISTRO"
-DISTRO_VERSION='1.0'
 
 if [ $# -eq 1 ]; then
     BUILDDIR="${WS}/$1"
@@ -239,7 +238,6 @@ cat >| ${BUILDDIR}/conf/auto.conf <<EOF
 DISTRO = "${DISTRO}"
 MACHINE = "${MACHINE}"
 SDKMACHINE = "${SDKMACHINE}"
-DISTRO_VERSION = "${DISTRO_VERSION}"
 DEBUG_BUILD = "${DEBUG_BUILD}"
 PERFORMANCE_BUILD = "${PERFORMANCE_BUILD}"
 
