@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+
+header:
+  version: 14
+
+distro: qcom-wayland
+
+defaults:
+  repos:
+    branch: master
+
+repos:
+  meta-qcom-hwe:
+    url: https://github.com/koenkooi/meta-qcom-hwe
+    branch: main
+
+  meta-qcom-distro:
+    url: https://github.com/koenkooi/meta-qcom-distro
+    branch: main
+
+  meta-qcom:
+    url: https://github.com/Linaro/meta-qcom
+    commit: 4a04e03d1e1a9db934
+
+  oe-core:
+    url: https://git.openembedded.org/openembedded-core
+    layers:
+      meta:
+
+  bitbake:
+    url: https://git.openembedded.org/bitbake
+    layers:
+      .: excluded
+
+local_conf_header:
+  base: |
+    CONF_VERSION = "2"
+    INHERIT += "buildstats buildstats-summary"
+    INHERIT += "buildhistory"
+  qcomflash: |
+    IMAGE_CLASSES += "image_types_qcom"
+    IMAGE_FSTYPES += "qcomflash"
+  extra: |
+    EXTRA_IMAGE_FEATURES = "allow-empty-password empty-root-password allow-root-login"
+    IMAGE_ROOTFS_EXTRA_SPACE = "307200"
+
+machine: unset
+
+target:
+  - core-image-base
