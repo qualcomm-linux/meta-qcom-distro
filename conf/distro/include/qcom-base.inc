@@ -11,7 +11,7 @@ TARGET_VENDOR = "-qcom"
 # to make the python below work. Local, site and auto.conf will override it.
 TCMODE ?= "default"
 
-DISTRO_FEATURES:append = " pam overlayfs ptest"
+DISTRO_FEATURES:append = " efi pam overlayfs ptest"
 
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
@@ -19,6 +19,9 @@ VIRTUAL-RUNTIME_init_manager = "systemd"
 VIRTUAL-RUNTIME_dev_manager  = "udev"
 
 PACKAGECONFIG:append:pn-systemd = " resolved networkd"
+
+# Set a default package class to avoid surprises
+PACKAGE_CLASSES = "package_ipk"
 
 # Avoid to duplicate the rootfs tarball by generating both tar.gz/tar.xz
 IMAGE_FSTYPES:remove = "tar.gz"
