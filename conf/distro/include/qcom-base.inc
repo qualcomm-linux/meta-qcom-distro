@@ -31,8 +31,8 @@ IMAGE_FSTYPES = "ext4"
 IMAGE_ROOTFS_ALIGNMENT = "4096"
 
 # Pull in the initrd image by default
-INITRAMFS_IMAGE_BUNDLE ?= "1"
-INITRAMFS_IMAGE = "initramfs-qcom-image"
+#INITRAMFS_IMAGE_BUNDLE ?= "1"
+#INITRAMFS_IMAGE = "initramfs-qcom-image"
 
 INHERIT += "buildhistory"
 INHERIT += "image-buildinfo"
