@@ -24,6 +24,9 @@ PACKAGECONFIG:append:pn-systemd = " resolved networkd"
 IMAGE_CLASSES += "image_types_qcom"
 IMAGE_FSTYPES += "qcomflash"
 
+# Set a default package class to avoid surprises
+PACKAGE_CLASSES = "package_ipk"
+
 # Avoid to duplicate the rootfs tarball by generating both tar.gz/tar.xz
 IMAGE_FSTYPES:remove = "tar.gz"
 
