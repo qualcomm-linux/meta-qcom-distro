@@ -29,7 +29,7 @@ IMAGE_ROOTFS_ALIGNMENT = "4096"
 
 # Pull in the initrd image by default
 INITRAMFS_IMAGE_BUNDLE ?= "1"
-INITRAMFS_IMAGE = "initramfs-qcom-image"
+INITRAMFS_IMAGE = "initramfs-rootfs-image"
 
 INHERIT += "buildhistory"
 INHERIT += "image-buildinfo"
