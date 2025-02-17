@@ -20,6 +20,10 @@ VIRTUAL-RUNTIME_dev_manager  = "udev"
 
 PACKAGECONFIG:append:pn-systemd = " resolved networkd"
 
+# Prepare a flat image directory structure suitable to flash with QDL
+IMAGE_CLASSES += "image_types_qcom"
+IMAGE_FSTYPES += "qcomflash"
+
 # Avoid to duplicate the rootfs tarball by generating both tar.gz/tar.xz
 IMAGE_FSTYPES:remove = "tar.gz"
 
