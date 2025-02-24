@@ -11,7 +11,7 @@ TARGET_VENDOR = "-qcom"
 # to make the python below work. Local, site and auto.conf will override it.
 TCMODE ?= "default"
 
-DISTRO_FEATURES:append = " pam overlayfs ptest efi"
+DISTRO_FEATURES:append = " pam overlayfs ptest efi wifi"
 
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
