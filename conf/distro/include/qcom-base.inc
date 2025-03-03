@@ -1,4 +1,4 @@
-DISTRO_VERSION ??= "0.0"
+DISTRO_VERSION = "2.0"
 
 # SDK variables.
 SDK_VERSION = "${DISTRO_VERSION}"
