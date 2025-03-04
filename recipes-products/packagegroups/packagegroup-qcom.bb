@@ -26,6 +26,8 @@ RDEPENDS:packagegroup-support-utils = "\
     libnl \
     libxml2 \
     procps \
+    dhcpcd \
+    dnsmasq \
     "
 
 RDEPENDS:packagegroup-filesystem-utils = "\
