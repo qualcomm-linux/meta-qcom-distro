@@ -21,13 +21,13 @@ RDEPENDS:${PN} = "\
     "
 
 RDEPENDS:packagegroup-support-utils = "\
+    dhcpcd \
+    dnsmasq \
     libinput \
     libinput-bin \
     libnl \
     libxml2 \
     procps \
-    dhcpcd \
-    dnsmasq \
     "
 
 RDEPENDS:packagegroup-filesystem-utils = "\
