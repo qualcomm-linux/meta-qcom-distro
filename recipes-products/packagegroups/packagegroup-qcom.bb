@@ -21,6 +21,8 @@ RDEPENDS:${PN} = "\
     "
 
 RDEPENDS:packagegroup-support-utils = "\
+    dhcpcd \
+    dnsmasq \
     libinput \
     libinput-bin \
     libnl \
