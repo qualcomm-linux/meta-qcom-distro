@@ -4,11 +4,10 @@ PACKAGES += " \
     ${PN}-support-utils \
     "
 
+# libinput is not just a library, it also contains udev rules
 RDEPENDS:${PN}-support-utils = " \
     libinput \
     libinput-bin \
-    libnl \
-    libxml2 \
     procps \
     "
 
