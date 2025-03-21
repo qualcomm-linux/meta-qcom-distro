@@ -7,7 +7,7 @@ LICENSE = "BSD-3-Clause-Clear"
 IMAGE_FEATURES += "package-management ssh-server-openssh"
 
 CORE_IMAGE_BASE_INSTALL += " \
-    packagegroup-qcom \
+    packagegroup-qcom-support-utils \
 "
 
 CORE_IMAGE_EXTRA_INSTALL += " \

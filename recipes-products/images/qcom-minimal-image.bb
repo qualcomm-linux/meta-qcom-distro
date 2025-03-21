@@ -11,7 +11,7 @@ REQUIRED_DISTRO_FEATURES = "pam systemd"
 
 CORE_IMAGE_BASE_INSTALL += " \
     kernel-modules \
-    packagegroup-filesystem-utils \
+    packagegroup-qcom-filesystem-utils \
 "
 
 EXTRA_USERS_PARAMS = "\
