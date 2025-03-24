@@ -1,3 +1,9 @@
+#
+# Copyright (c) 2024 Linaro
+# Copyright (c) 2024-2025 Qualcomm Innovation Center, Inc.
+#
+# SPDX-License-Identifier: MIT
+
 # This class installs adbd into the target image.
 # The adbd daemon is disabled unless IMAGE_FEATURES contains the 'enable-adbd'
 # Also one can disable adbd by removing /etc/usb-debugging-enabled from rootfs manually.
