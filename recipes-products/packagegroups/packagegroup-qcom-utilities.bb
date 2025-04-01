@@ -1,5 +1,10 @@
+SUMMARY = "Userspace utilities for QCOM platforms"
 
-PACKAGES += " \
+PACKAGE_ARCH = "${TUNE_PKGARCH}"
+
+inherit packagegroup
+
+PACKAGES = " \
     ${PN}-filesystem-utils \
     ${PN}-support-utils \
     "
