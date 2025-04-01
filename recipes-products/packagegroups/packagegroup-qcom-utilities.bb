@@ -1,13 +1,13 @@
+SUMMARY = "Userspace utilities for QCOM platforms"
 
-PACKAGES += " \
+inherit packagegroup
+
+PACKAGES = " \
     ${PN}-filesystem-utils \
     ${PN}-support-utils \
     "
 
-# libinput is not just a library, it also contains udev rules
 RDEPENDS:${PN}-support-utils = " \
-    libinput \
-    libinput-bin \
     procps \
     "
 
