@@ -8,6 +8,7 @@ PACKAGES += " \
 RDEPENDS:${PN}-support-utils = " \
     libinput \
     libinput-bin \
+    networkmanager \
     procps \
     "
 
