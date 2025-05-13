@@ -45,4 +45,4 @@ require conf/distro/include/yocto-uninative.inc
 INHERIT += "uninative"
 
 # GCC Version
-GCCVERSION = "14.2%"
+GCCVERSION = "15.1%"
