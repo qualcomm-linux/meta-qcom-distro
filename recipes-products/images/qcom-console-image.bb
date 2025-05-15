@@ -13,7 +13,3 @@ CORE_IMAGE_BASE_INSTALL += " \
 CORE_IMAGE_EXTRA_INSTALL += " \
     libgomp \
 "
-
-# docker pulls runc/containerd, which in turn recommend lxc unecessarily
-
-BAD_RECOMMENDATIONS:append = " lxc"
