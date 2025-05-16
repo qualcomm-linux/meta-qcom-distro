@@ -5,6 +5,7 @@ SUMMARY = "Basic console image"
 IMAGE_FEATURES += "package-management ssh-server-openssh"
 
 CORE_IMAGE_BASE_INSTALL += " \
+    packagegroup-qcom-utilities-network-utils \
     packagegroup-qcom-utilities-support-utils \
 "
 
