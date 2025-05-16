@@ -14,9 +14,5 @@ CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-filesystem-utils \
 "
 
-EXTRA_USERS_PARAMS = "\
-    useradd -r -s /bin/false system; \
-    "
-
 # Adding kernel-devsrc to provide kernel development support on SDK
 TOOLCHAIN_TARGET_TASK += "kernel-devsrc"
