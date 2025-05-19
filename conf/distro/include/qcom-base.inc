@@ -7,10 +7,6 @@ SDK_VENDOR = "-qcomsdk"
 
 TARGET_VENDOR = "-qcom"
 
-# defaultsetup.inc gets includes after ${DISTRO}.conf, so we need to set it here
-# to make the python below work. Local, site and auto.conf will override it.
-TCMODE ?= "default"
-
 DISTRO_FEATURES:append = " bluetooth efi overlayfs pam pni-names ptest wifi"
 
 # Use systemd init manager for system initialization.
