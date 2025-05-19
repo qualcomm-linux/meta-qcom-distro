@@ -23,7 +23,6 @@ PACKAGE_CLASSES = "package_ipk"
 IMAGE_FSTYPES:remove = "tar.gz"
 
 # Pull in the initrd image by default
-INITRAMFS_IMAGE_BUNDLE ?= "1"
 INITRAMFS_IMAGE = "initramfs-rootfs-image"
 
 INHERIT += "buildhistory"
