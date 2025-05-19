@@ -12,8 +12,6 @@ DISTRO_FEATURES:append = " bluetooth efi overlayfs pam pni-names ptest wifi"
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
 
-PACKAGECONFIG:append:pn-systemd = " resolved networkd"
-
 # Prepare a flat image directory structure suitable to flash with QDL
 IMAGE_CLASSES += "image_types_qcom"
 IMAGE_FSTYPES += "qcomflash"
