@@ -11,8 +11,6 @@ DISTRO_FEATURES:append = " bluetooth efi overlayfs pam pni-names ptest wifi"
 
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
-VIRTUAL-RUNTIME_init_manager = "systemd"
-VIRTUAL-RUNTIME_dev_manager  = "udev"
 
 PACKAGECONFIG:append:pn-systemd = " resolved networkd"
 
