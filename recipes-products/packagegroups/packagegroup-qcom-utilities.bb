@@ -4,6 +4,7 @@ inherit packagegroup
 
 PACKAGES = " \
     ${PN}-filesystem-utils \
+    ${PN}-gpu-utils \
     ${PN}-network-utils \
     ${PN}-support-utils \
     "
@@ -15,6 +16,14 @@ RDEPENDS:${PN}-filesystem-utils = " \
     e2fsprogs-resize2fs \
     e2fsprogs-tune2fs \
     "
+
+RDEPENDS:${PN}-gpu-utils = " \
+    clinfo \
+    kmscube \
+    libopencl-mesa \
+    mesa-demos \
+    vulkan-tools \
+"
 
 RDEPENDS:${PN}-network-utils = " \
     ethtool \
