@@ -7,18 +7,10 @@ SDK_VENDOR = "-qcomsdk"
 
 TARGET_VENDOR = "-qcom"
 
-# defaultsetup.inc gets includes after ${DISTRO}.conf, so we need to set it here
-# to make the python below work. Local, site and auto.conf will override it.
-TCMODE ?= "default"
-
 DISTRO_FEATURES:append = " bluetooth efi overlayfs pam pni-names ptest wifi"
 
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
-VIRTUAL-RUNTIME_init_manager = "systemd"
-VIRTUAL-RUNTIME_dev_manager  = "udev"
-
-PACKAGECONFIG:append:pn-systemd = " resolved networkd"
 
 # Prepare a flat image directory structure suitable to flash with QDL
 IMAGE_CLASSES += "image_types_qcom"
@@ -31,7 +23,6 @@ PACKAGE_CLASSES = "package_ipk"
 IMAGE_FSTYPES:remove = "tar.gz"
 
 # Pull in the initrd image by default
-INITRAMFS_IMAGE_BUNDLE ?= "1"
 INITRAMFS_IMAGE = "initramfs-rootfs-image"
 
 INHERIT += "buildhistory"
@@ -40,6 +31,8 @@ INHERIT += "recipe_sanity"
 
 BUILDHISTORY_COMMIT = "1"
 
+require conf/distro/include/security_flags.inc
+require conf/distro/include/yocto-space-optimize.inc
 require conf/distro/include/yocto-uninative.inc
 
 INHERIT += "uninative"
