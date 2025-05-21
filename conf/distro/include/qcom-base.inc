@@ -37,3 +37,7 @@ require conf/distro/include/yocto-uninative.inc
 
 INHERIT += "uninative"
 
+# Enable OpenCL
+PACKAGECONFIG:append:pn-mesa = " opencl libclc gallium-llvm"
+PACKAGECONFIG:append:pn-mesa-native = " opencl libclc gallium-llvm"
+PACKAGECONFIG:append:pn-nativesdk-mesa = " opencl libclc gallium-llvm"
