@@ -29,5 +29,10 @@ RDEPENDS:${PN}-network-utils = " \
     "
 
 RDEPENDS:${PN}-support-utils = " \
+    file \
+    less \
+    ltrace \
     procps \
+    strace \
+    usbutils \
     "
