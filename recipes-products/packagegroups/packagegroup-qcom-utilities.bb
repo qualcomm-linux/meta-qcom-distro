@@ -20,9 +20,11 @@ RDEPENDS:${PN}-filesystem-utils = " \
 RDEPENDS:${PN}-gpu-utils = " \
     clinfo \
     kmscube \
-    libopencl-mesa \
     mesa-demos \
     vulkan-tools \
+"
+RRECOMMENDS:${PN}-gpu-utils = " \
+    libopencl-mesa \
 "
 
 RDEPENDS:${PN}-network-utils = " \
