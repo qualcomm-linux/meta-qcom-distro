@@ -42,5 +42,13 @@ PACKAGECONFIG:append:pn-mesa = " opencl libclc gallium-llvm"
 PACKAGECONFIG:append:pn-mesa-native = " opencl libclc gallium-llvm"
 PACKAGECONFIG:append:pn-nativesdk-mesa = " opencl libclc gallium-llvm"
 
+# Switch to GLVND wrapper
+PACKAGECONFIG:append:pn-mesa = " glvnd"
+PREFERRED_PROVIDER_virtual/egl = "libglvnd"
+PREFERRED_PROVIDER_virtual/libgl = "libglvnd"
+PREFERRED_PROVIDER_virtual/libgles1 = "libglvnd"
+PREFERRED_PROVIDER_virtual/libgles2 = "libglvnd"
+PREFERRED_PROVIDER_virtual/libgles3 = "libglvnd"
+
 # Disable weston idle timeout
 PACKAGECONFIG:append:pn-weston-init = " no-idle-timeout"
