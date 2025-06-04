@@ -16,4 +16,5 @@ RDEPENDS:${PN} = "\
     rng-tools \
     fscryptctl \
     libkcapi \
+    glmark2 \
     "
