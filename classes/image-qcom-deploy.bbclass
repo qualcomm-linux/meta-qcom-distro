@@ -177,5 +177,21 @@ do_deploy_fixup () {
             install -m 0644 $f ./sail_nor/
 	done
     fi
+
+    # Copy ufs partition bins
+    if [ -d ${DEPLOY_DIR_IMAGE}/partition_ufs ]; then
+        install -d partition_ufs
+        for f in ${DEPLOY_DIR_IMAGE}/partition_ufs/*; do
+            install -m 0644 $f ./partition_ufs/
+        done
+    fi
+
+    # Copy emmc partition bins
+    if [ -d ${DEPLOY_DIR_IMAGE}/partition_emmc ]; then
+        install -d partition_emmc
+        for f in ${DEPLOY_DIR_IMAGE}/partition_emmc/*; do
+            install -m 0644 $f ./partition_emmc/
+        done
+    fi
 }
 addtask do_deploy_fixup after do_image_complete before do_build
