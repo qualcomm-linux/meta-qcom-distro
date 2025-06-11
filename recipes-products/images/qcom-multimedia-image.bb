@@ -10,3 +10,6 @@ REQUIRED_DISTRO_FEATURES += "wayland"
 CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-multimedia \
 "
+
+#Provide log header support on SDK
+TOOLCHAIN_TARGET_TASK:append = " syslog-plumber-dev"
