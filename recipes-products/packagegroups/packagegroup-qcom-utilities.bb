@@ -2,7 +2,15 @@ SUMMARY = "Userspace utilities for QCOM platforms"
 
 inherit packagegroup
 
-PACKAGES = " \
+PACKAGES += " \
+    ${PN}-filesystem-utils \
+    ${PN}-gpu-utils \
+    ${PN}-network-utils \
+    ${PN}-support-utils \
+    "
+
+# Have ${PN} drag in all of the subpackages
+RDEPENDS:${PN} = " \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
@@ -20,9 +28,11 @@ RDEPENDS:${PN}-filesystem-utils = " \
 RDEPENDS:${PN}-gpu-utils = " \
     clinfo \
     kmscube \
-    libopencl-mesa \
     mesa-demos \
     vulkan-tools \
+"
+RRECOMMENDS:${PN}-gpu-utils = " \
+    libopencl-mesa \
 "
 
 RDEPENDS:${PN}-network-utils = " \
