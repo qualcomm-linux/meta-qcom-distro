@@ -12,4 +12,9 @@ CORE_IMAGE_BASE_INSTALL += " \
 "
 
 #Provide log header support on SDK
-TOOLCHAIN_TARGET_TASK:append = " syslog-plumber-dev"
+TOOLCHAIN_TARGET_TASK:append = " syslog-plumber-dev protobuf-c-dev"
+
+#Provide camera header support on SDK
+TOOLCHAIN_TARGET_TASK:append:qcom-custom-bsp:qcm6490 = " camxapi-kt-dev"
+TOOLCHAIN_TARGET_TASK:append:qcom-custom-bsp:qcs9100 = " camxapi-dev"
+TOOLCHAIN_TARGET_TASK:append:qcom-custom-bsp:qcs8300 = " camxapi-dev"
