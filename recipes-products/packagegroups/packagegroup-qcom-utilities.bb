@@ -43,5 +43,6 @@ RDEPENDS:${PN}-support-utils = " \
     ltrace \
     procps \
     strace \
+    tinyalsa \
     usbutils \
     "
