@@ -7,7 +7,16 @@ SDK_VENDOR = "-qcomsdk"
 
 TARGET_VENDOR = "-qcom"
 
-DISTRO_FEATURES:append = " bluetooth efi overlayfs pam pni-names ptest wifi"
+DISTRO_FEATURES:append = " \
+    bluetooth \
+    efi \
+    glvnd \
+    overlayfs \
+    pam \
+    pni-names \
+    ptest \
+    wifi \
+"
 
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
