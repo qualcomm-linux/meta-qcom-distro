@@ -5,6 +5,7 @@ SUMMARY = "Basic Wayland image with Weston"
 IMAGE_FEATURES += "weston"
 
 CORE_IMAGE_BASE_INSTALL += " \
+    opencv \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     weston \
