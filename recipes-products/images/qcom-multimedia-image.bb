@@ -10,6 +10,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     weston \
     weston-examples \
     weston-init \
+    opencv \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'weston-xwayland xterm', '', d)} \
 "
 
