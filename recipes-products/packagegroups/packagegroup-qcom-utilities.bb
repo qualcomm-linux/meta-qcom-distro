@@ -37,6 +37,7 @@ RRECOMMENDS:${PN}-gpu-utils = " \
 
 RDEPENDS:${PN}-network-utils = " \
     ethtool \
+    hostapd \
     iproute2 \
     iw \
     networkmanager \
