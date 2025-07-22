@@ -55,5 +55,6 @@ RDEPENDS:${PN}-support-utils = " \
     procps \
     strace \
     tinyalsa \
+    trace-cmd \
     usbutils \
     "
