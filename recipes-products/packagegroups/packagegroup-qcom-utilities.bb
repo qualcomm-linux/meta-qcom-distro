@@ -37,6 +37,7 @@ RRECOMMENDS:${PN}-gpu-utils = " \
 
 RDEPENDS:${PN}-network-utils = " \
     ethtool \
+    hostapd \
     iproute2 \
     iw \
     networkmanager \
@@ -54,5 +55,6 @@ RDEPENDS:${PN}-support-utils = " \
     procps \
     strace \
     tinyalsa \
+    trace-cmd \
     usbutils \
     "
