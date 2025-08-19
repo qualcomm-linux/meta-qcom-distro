@@ -6,7 +6,7 @@ inherit packagegroup
 PACKAGES = "${PN}"
 
 RDEPENDS:${PN} = "\
-    igt-gpu-tools \
+    igt-gpu-tools-tests \
     iperf3 \
     libkcapi \
     lmbench \
