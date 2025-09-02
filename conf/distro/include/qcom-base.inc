@@ -64,7 +64,7 @@ require conf/distro/include/yocto-uninative.inc
 INHERIT += "uninative"
 
 # GCC Version
-GCCVERSION = "13.3%"
+GCCVERSION = "13.4%"
 
 # Easily switch between rust versions just by changing RUST_VERSION variable
 RUST_VERSION ?= "1.75.0"
