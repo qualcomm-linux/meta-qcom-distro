@@ -1,6 +1,6 @@
 DISTRO_NAME = "Qualcomm Linux"
 
-DISTRO_VERSION = "1.5-ver.1.1"
+DISTRO_VERSION = "1.6-ver.1.0"
 
 # Extend the version string of the Linux kernel to indicate distro
 LINUX_VERSION_EXTENSION = "-qli-${DISTRO_VERSION}"
