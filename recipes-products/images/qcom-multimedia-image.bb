@@ -9,6 +9,10 @@ CORE_IMAGE_BASE_INSTALL += " \
     alsa-utils-alsatplg \
     alsa-utils-alsaucm \
     alsa-utils-aplay \
+    gstreamer1.0 \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
