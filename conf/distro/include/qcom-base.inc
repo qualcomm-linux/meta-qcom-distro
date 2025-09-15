@@ -10,7 +10,6 @@ TARGET_VENDOR = "-qcom"
 DISTRO_FEATURES:append = " \
     bluetooth \
     efi \
-    glvnd \
     overlayfs \
     pam \
     pni-names \
