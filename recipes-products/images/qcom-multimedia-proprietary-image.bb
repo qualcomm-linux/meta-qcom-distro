@@ -11,4 +11,6 @@ CORE_IMAGE_BASE_INSTALL += " \
     kgsl-dlkm \
     qcom-adreno \
 "
-
+CORE_IMAGE_BASE_INSTALL:append = " \
+    ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-ar', ' packagegroup-qcom-audio', '', d)} \
+"
