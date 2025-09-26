@@ -20,6 +20,9 @@ DISTRO_FEATURES:append = " \
 # Use systemd init manager for system initialization.
 INIT_MANAGER = "systemd"
 
+# Activate systemd watchdog
+WATCHDOG_RUNTIME_SEC:pn-systemd = "30"
+
 # Prepare a flat image directory structure suitable to flash with QDL
 IMAGE_CLASSES += "image_types_qcom"
 IMAGE_FSTYPES += "qcomflash"
