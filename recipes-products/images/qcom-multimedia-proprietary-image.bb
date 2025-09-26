@@ -10,5 +10,6 @@ CORE_IMAGE_BASE_INSTALL += " \
     iris-video-dlkm \
     kgsl-dlkm \
     qcom-adreno \
+    packagegroup-qcom-audio \
 "
 
