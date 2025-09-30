@@ -49,6 +49,7 @@ RDEPENDS:${PN}-network-utils = " \
     "
 
 RDEPENDS:${PN}-support-utils = " \
+    efivar \
     file \
     less \
     ltrace \
