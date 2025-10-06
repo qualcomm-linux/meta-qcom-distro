@@ -14,6 +14,7 @@ RDEPENDS:${PN} = "\
     libkcapi \
     lmbench \
     media-ctl \
+    opencv-apps \
     pulseaudio-misc \
     v4l-utils \
     yavta \
