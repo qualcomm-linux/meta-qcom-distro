@@ -14,7 +14,6 @@ RDEPENDS:${PN} = "\
     libkcapi \
     lmbench \
     media-ctl \
-    opencv-apps \
     pulseaudio-misc \
     v4l-utils \
     yavta \
@@ -22,4 +21,5 @@ RDEPENDS:${PN} = "\
 
 RDEPENDS:${PN}:append:aarch64 = " \
     fastrpc-tests \
+    opencv-apps \
     "
