@@ -25,6 +25,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     weston-examples \
     weston-init \
     wireplumber \
+    libcamera \
 "
 
 # let's make sure we have a good image.
