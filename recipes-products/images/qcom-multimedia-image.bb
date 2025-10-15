@@ -13,6 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
+    libcamera \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
