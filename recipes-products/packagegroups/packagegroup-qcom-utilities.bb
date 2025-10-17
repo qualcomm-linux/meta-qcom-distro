@@ -21,6 +21,7 @@ RDEPENDS:${PN} = " \
 
 RDEPENDS:${PN}-debug-utils = " \
     strace \
+    valgrind \
     "
 
 RDEPENDS:${PN}-filesystem-utils = " \
