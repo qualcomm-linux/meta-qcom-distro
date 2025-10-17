@@ -20,6 +20,7 @@ RDEPENDS:${PN} = " \
     "
 
 RDEPENDS:${PN}-debug-utils = " \
+    gdb \
     strace \
     valgrind \
     "
