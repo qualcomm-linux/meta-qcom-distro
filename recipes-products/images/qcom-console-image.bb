@@ -7,6 +7,7 @@ IMAGE_FEATURES += "package-management ssh-server-openssh"
 CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-network-utils \
     packagegroup-qcom-utilities-support-utils \
+    packagegroup-qcom-virtualization \
 "
 
 CORE_IMAGE_EXTRA_INSTALL += " \
