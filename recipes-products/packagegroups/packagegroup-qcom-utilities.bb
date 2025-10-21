@@ -49,6 +49,7 @@ RDEPENDS:${PN}-network-utils = " \
     "
 
 RDEPENDS:${PN}-support-utils = " \
+    dtc \
     efivar \
     file \
     less \
