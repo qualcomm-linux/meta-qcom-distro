@@ -3,6 +3,7 @@ SUMMARY = "Userspace utilities for QCOM platforms"
 inherit packagegroup
 
 PACKAGES += " \
+    ${PN}-debug-utils \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
@@ -11,10 +12,17 @@ PACKAGES += " \
 
 # Have ${PN} drag in all of the subpackages
 RDEPENDS:${PN} = " \
+    ${PN}-debug-utils \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
     ${PN}-support-utils \
+    "
+
+RDEPENDS:${PN}-debug-utils = " \
+    gdb \
+    strace \
+    valgrind \
     "
 
 RDEPENDS:${PN}-filesystem-utils = " \
@@ -54,7 +62,6 @@ RDEPENDS:${PN}-support-utils = " \
     less \
     ltrace \
     procps \
-    strace \
     tinyalsa \
     trace-cmd \
     usbutils \
