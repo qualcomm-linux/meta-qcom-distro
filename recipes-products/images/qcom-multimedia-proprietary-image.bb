@@ -7,6 +7,7 @@ COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:aarch64 = "(.*)"
 
 CORE_IMAGE_BASE_INSTALL += " \
+    camx-dlkm \
     iris-video-dlkm \
     kgsl-dlkm \
     qcom-adreno \
