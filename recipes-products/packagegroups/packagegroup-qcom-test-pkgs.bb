@@ -8,6 +8,8 @@ inherit packagegroup
 PACKAGES = "${PN}"
 
 RDEPENDS:${PN} = "\
+    coreutils \
+    expect \
     igt-gpu-tools-tests \
     iperf3 \
     iproute2 \
@@ -15,7 +17,10 @@ RDEPENDS:${PN} = "\
     lmbench \
     media-ctl \
     opencv-apps \
+    openssh-sftp-server \
     pulseaudio-misc \
+    rng-tools \
+    util-linux \
     v4l-utils \
     yavta \
     "
