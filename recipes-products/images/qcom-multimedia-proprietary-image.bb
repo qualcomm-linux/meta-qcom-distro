@@ -12,5 +12,5 @@ CORE_IMAGE_BASE_INSTALL += " \
     qcom-adreno \
 "
 CORE_IMAGE_BASE_INSTALL:append = " \
-    ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-ar', ' packagegroup-qcom-audio', '', d)} \
+    ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-audioreach', ' packagegroup-audioreach', '', d)} \
 "
