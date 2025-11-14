@@ -34,6 +34,7 @@ RDEPENDS:${PN}:append:qcom-custom-distro = "\
 
 RDEPENDS:packagegroup-support-utils = "\
     can-utils \
+    can-utils-access \
     chrony \
     dosfstools \
     ethtool \
