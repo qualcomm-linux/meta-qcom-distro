@@ -8,6 +8,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-debug-utils \
     packagegroup-qcom-utilities-network-utils \
     packagegroup-qcom-utilities-support-utils \
+    packagegroup-qcom-virtualization \
 "
 
 CORE_IMAGE_EXTRA_INSTALL += " \
