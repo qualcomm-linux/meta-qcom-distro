@@ -66,5 +66,6 @@ RDEPENDS:${PN}-support-utils = " \
     procps \
     tinyalsa \
     trace-cmd \
+    udev-extraconf-automount \
     usbutils \
     "
