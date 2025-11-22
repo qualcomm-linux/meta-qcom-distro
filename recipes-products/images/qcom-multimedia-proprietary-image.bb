@@ -11,6 +11,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     iris-video-dlkm \
     kgsl-dlkm \
     qcom-adreno \
+    qcom-fastcv-binaries \
 "
 CORE_IMAGE_BASE_INSTALL:append = " \
     ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-audioreach', ' packagegroup-audioreach', '', d)} \
