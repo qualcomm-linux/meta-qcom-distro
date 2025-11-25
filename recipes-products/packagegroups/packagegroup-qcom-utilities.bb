@@ -49,6 +49,7 @@ RDEPENDS:${PN}-network-utils = " \
     iperf2 \
     iproute2 \
     iw \
+    net-tools \
     networkmanager \
     openssh-scp \
     openssh-ssh \
