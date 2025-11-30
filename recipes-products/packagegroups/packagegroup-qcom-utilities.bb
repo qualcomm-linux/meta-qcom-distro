@@ -67,4 +67,5 @@ RDEPENDS:${PN}-support-utils = " \
     tinyalsa \
     trace-cmd \
     usbutils \
+    irqbalance \
     "
