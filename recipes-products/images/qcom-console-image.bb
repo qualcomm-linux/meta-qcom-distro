@@ -2,7 +2,8 @@ require qcom-minimal-image.bb
 
 SUMMARY = "Basic console image"
 
-IMAGE_FEATURES += "package-management ssh-server-openssh"
+IMAGE_FEATURES += "${@bb.utils.contains('DISTRO_FEATURES', 'sota', '', 'package-management', d)} \
+                   ssh-server-openssh"
 
 CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-debug-utils \
