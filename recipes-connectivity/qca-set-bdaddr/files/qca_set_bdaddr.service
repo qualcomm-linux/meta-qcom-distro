@@ -1,0 +1,12 @@
+[Unit]
+Description=Set Bluetooth Device Address (BDADDR) for unconfigured Qualcomm BT chipsets.
+ConditionPathExists=/sys/devices/soc0/serial_number
+Requires=bluetooth.service
+After=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStart=+/usr/bin/qca_set_bdaddr.sh
+
+[Install]
+WantedBy=bluetooth.target
