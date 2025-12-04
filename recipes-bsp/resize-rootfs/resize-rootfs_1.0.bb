@@ -7,7 +7,7 @@ SRC_URI += "\
     file://growfs-root.preset \
 "
 
-inherit features_check systemd
+inherit allarch features_check systemd
 REQUIRED_DISTRO_FEATURES = "systemd"
 
 S = "${UNPACKDIR}"
