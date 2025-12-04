@@ -1,6 +1,6 @@
 DISTRO_NAME = "Qualcomm Linux"
 
-DISTRO_VERSION = "1.6-ver.1.2.1"
+DISTRO_VERSION = "1.7-ver.1.0"
 
 # Extend the version string of the Linux kernel to indicate distro
 LINUX_VERSION_EXTENSION = "-qli-${DISTRO_VERSION}"
@@ -49,10 +49,19 @@ INHERIT += "recipe_sanity"
 # by symlinking /var/log to /var/volatile/log
 VOLATILE_LOG_DIR = "${@bb.utils.contains('PERFORMANCE_BUILD', '1', 'yes', 'no', d)}"
 
-# Drop console from Kernel cmdline.
-CONSOLE_CMDLINE = "${@oe.utils.conditional('PERFORMANCE_BUILD','1','console=','console=ttyMSM0,115200n8 earlycon',d)}"
-# Disable serial console
 SERIAL_CONSOLES ?= "${@oe.utils.conditional('PERFORMANCE_BUILD','1','','115200;ttyMSM0',d)}"
+# populate console value to be added to cmdline
+def get_console_val(d):
+    import re
+
+    console = "ttynull"
+    consoles = (d.getVar('SERIAL_CONSOLES') or "").split()
+    for entry in consoles:
+        baudrate = re.sub(r';.*', '', entry)
+        tty = re.sub(r'^[0-9]*;', '', entry)
+        tty = re.sub(r';.*', '', tty)
+        console = f"{tty},{baudrate}n8"
+    return f"console={console}"
 
 BUILDHISTORY_COMMIT = "1"
 
@@ -88,7 +97,9 @@ OSTREE_LOADER_LINK = "0"
 BUILD_OTA_TARBALL = "1"
 OSTREE_KERNEL = "${EFI_LINUX_IMG}"
 OSTREE_KERNEL_ARGS_COMMON ?= "root=LABEL=otaroot rootfstype=ext4"
-OSTREE_KERNEL_ARGS ?= " ${OSTREE_KERNEL_ARGS_COMMON} ${KERNEL_CMDLINE_EXTRA} "
+OSTREE_CONSOLE = ""
+OSTREE_CONSOLE:qcom-custom-bsp = "${@get_console_val(d)}"
+OSTREE_KERNEL_ARGS ?= " ${OSTREE_KERNEL_ARGS_COMMON} ${OSTREE_CONSOLE} ${KERNEL_CMDLINE_EXTRA} "
 OSTREE_KERNEL_ARGS:remove = "root=/dev/disk/by-partlabel/system"
 SOTA_CLIENT_PROV ?= ""
 OSTREE_DEPLOY_DEVICETREE = "0"
