@@ -7,6 +7,7 @@ PACKAGES += " \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
+    ${PN}-profile-utils \
     ${PN}-support-utils \
     "
 
@@ -55,6 +56,12 @@ RDEPENDS:${PN}-network-utils = " \
     rsync \
     smbclient \
     tcpdump \
+    "
+
+RDEPENDS:${PN}-profile-utils = " \
+    perf \
+    powertop \
+    systemd-analyze \
     "
 
 RDEPENDS:${PN}-support-utils = " \
