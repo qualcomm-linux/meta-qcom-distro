@@ -7,13 +7,17 @@ SRC_URI += "\
     file://growfs-root.preset \
 "
 
-inherit features_check systemd
+inherit allarch features_check systemd
 REQUIRED_DISTRO_FEATURES = "systemd"
 
-do_install:append:qcom() {
-    install -Dm 0644 ${WORKDIR}/sources/growfs-root.preset \
+S = "${UNPACKDIR}"
+
+do_compile[noexec] = "1"
+
+do_install() {
+    install -Dm 0644 ${UNPACKDIR}/growfs-root.preset \
             ${D}${systemd_unitdir}/system-preset/98-growfs-root.preset
-    install -Dm 0644 ${WORKDIR}/sources/growfs-root.conf \
+    install -Dm 0644 ${UNPACKDIR}/growfs-root.conf \
             ${D}${systemd_unitdir}/system/systemd-growfs-root.service.d/growfs-root.conf
 }
 
