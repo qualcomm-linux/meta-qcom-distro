@@ -12,7 +12,9 @@ REQUIRED_DISTRO_FEATURES = "systemd"
 
 S = "${UNPACKDIR}"
 
-do_install:append:qcom() {
+do_compile[noexec] = "1"
+
+do_install() {
     install -Dm 0644 ${UNPACKDIR}/growfs-root.preset \
             ${D}${systemd_unitdir}/system-preset/98-growfs-root.preset
     install -Dm 0644 ${UNPACKDIR}/growfs-root.conf \
