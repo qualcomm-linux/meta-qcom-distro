@@ -12,7 +12,7 @@ REQUIRED_DISTRO_FEATURES = "pam systemd"
 CORE_IMAGE_BASE_INSTALL += " \
     kernel-modules \
     packagegroup-qcom-utilities-filesystem-utils \
-    rootfs-resize \
+    resize-rootfs \
 "
 
 # Default root password: oelinux123
