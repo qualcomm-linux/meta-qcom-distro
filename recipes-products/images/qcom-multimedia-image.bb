@@ -9,6 +9,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     alsa-utils-alsatplg \
     alsa-utils-alsaucm \
     alsa-utils-aplay \
+    docker-compose \
     gstreamer1.0 \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
