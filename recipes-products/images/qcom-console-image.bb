@@ -10,7 +10,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-network-utils \
     packagegroup-qcom-utilities-profile-utils \
     packagegroup-qcom-utilities-support-utils \
-    packagegroup-qcom-virtualization \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'packagegroup-qcom-virtualization', '', d)} \
 "
 
 CORE_IMAGE_EXTRA_INSTALL += " \
