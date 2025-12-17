@@ -1,0 +1,49 @@
+# /etc/logrotate.d/rsyslog - Qualcomm specific logrotation configuration
+# derived from rsyslog.logrotate in meta-oe with below key modifications
+# for syslog, user.log and /var/log/messages:
+#  * Updated rotation policy from daily to when the file reaches 100 MB.
+#  * Changed number of retained archives to 20 instead of 7.
+#  * Added a date extension to rotated files instead of numeric suffix.
+
+/var/log/syslog
+/var/log/messages
+/var/log/user.log
+{
+        rotate 20
+        size 100M
+        maxage 7
+        dateext
+        dateformat -%Y%m%d-%H%M%S
+        copytruncate
+        sharedscripts
+        missingok
+        notifempty
+        delaycompress
+        compress
+        postrotate
+		@BINDIR@/pkill -HUP rsyslogd 2> /dev/null || true
+        endscript
+}
+
+/var/log/mail.info
+/var/log/mail.warn
+/var/log/mail.err
+/var/log/mail.log
+/var/log/daemon.log
+/var/log/kern.log
+/var/log/auth.log
+/var/log/lpr.log
+/var/log/cron.log
+/var/log/debug
+{
+        rotate 4
+        weekly
+        missingok
+        notifempty
+        compress
+        delaycompress
+        sharedscripts
+        postrotate
+		@BINDIR@/pkill -HUP rsyslogd 2> /dev/null || true
+        endscript
+}
