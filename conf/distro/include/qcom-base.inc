@@ -26,6 +26,9 @@ INIT_MANAGER = "systemd"
 # Activate systemd watchdog
 WATCHDOG_RUNTIME_SEC:pn-systemd = "30"
 
+# Use rsyslog as default syslog utility
+VIRTUAL-RUNTIME_base-utils-syslog = "rsyslog"
+
 # Prepare a flat image directory structure suitable to flash with QDL
 IMAGE_CLASSES += "image_types_qcom"
 IMAGE_FSTYPES += "qcomflash"
