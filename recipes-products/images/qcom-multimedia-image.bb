@@ -14,8 +14,13 @@ CORE_IMAGE_BASE_INSTALL += " \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
+    kubeadm \
+    kubernetes \
+    kubernetes-misc \
     libcamera \
     packagegroup-container \
+    packagegroup-containerd \
+    packagegroup-oci \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
