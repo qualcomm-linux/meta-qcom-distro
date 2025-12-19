@@ -67,50 +67,7 @@ jobs:
         run: |
           ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh
 
-  compile_warm_up:
-    needs: [kas-setup, yocto-run-checks]
-    if: github.repository_owner == 'qualcomm-linux'
-    runs-on: [self-hosted, qcom-u2404, amd64-ssd]
-    strategy:
-      fail-fast: true
-      matrix:
-        machine:
-          - rb3gen2-core-kit
-          - qcom-armv8a
-        distro:
-          - name: qcom-distro
-            yamlfile: ':ci/qcom-distro.yml'
-          - name: qcom-distro-prop-image
-            yamlfile: ':ci/qcom-distro-prop-image.yml'
-          # kvm is compatible with all the compile warm up machines
-          - name: qcom-distro-kvm
-            yamlfile: ':ci/qcom-distro-kvm.yml'
-          - name: qcom-distro-sota
-            yamlfile: ':ci/qcom-distro-sota.yml'
-        kernel:
-          - type: default
-            dirname: ""
-            yamlfile: ""
-    name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          repository: qualcomm-linux/meta-qcom
-          ref: master
-
-      - name: Run kas build
-        uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
-        with:
-          machine: ${{matrix.machine}}
-          distro_yaml: ${{matrix.distro.yamlfile}}
-          distro_name: ${{matrix.distro.name}}
-          kernel_yaml: ${{matrix.kernel.yamlfile}}
-          kernel_dirname: ${{matrix.kernel.dirname}}
-          cache_dir: ${CACHE_DIR}
-          kas: ${KAS_CONTAINER}
-
   compile:
-    needs: compile_warm_up
     if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64-ssd]
     outputs:
@@ -119,15 +76,9 @@ jobs:
       fail-fast: true
       matrix:
         machine:
-          - iq-8275-evk
-          - iq-9075-evk
-          - qcm6490-idp
-          - qcs615-ride
-          - qcs8300-ride-sx
-          - qcs9100-ride-sx
           - qcom-armv7a
-          - rb1-core-kit
-          - sm8750-mtp
+          - qcom-armv8a
+          - rb3gen2-core-kit
         distro:
           - name: qcom-distro
             yamlfile: ':ci/qcom-distro.yml'
@@ -158,7 +109,7 @@ jobs:
                 dirname: "+linux-yocto-lts"
                 yamlfile: ":ci/linux-yocto-lts.yml"
           # include kvm compatible machines for the builds
-          - machine: qcs9100-ride-sx
+          - machine: qcom-armv8a
             distro:
                 name: qcom-distro-kvm
                 yamlfile: ':ci/qcom-distro-kvm.yml'
