@@ -2,6 +2,9 @@ require qcom-multimedia-image.bb
 
 SUMMARY = "An image built on top of multimedia image for proprietary features"
 
+# Use proprietary diag-router instead of open-source diag
+PREFERRED_PROVIDER_virtual-diag-router = "diag-router"
+
 # This image is compatible only with aarch64 (ARMv8)
 COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:aarch64 = "(.*)"
