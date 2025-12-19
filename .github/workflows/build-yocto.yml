@@ -54,6 +54,10 @@ jobs:
           repository: qualcomm-linux/meta-qcom
           ref: master
 
+      - uses: actions/checkout@v4
+        with:
+          path: ../meta-qcom-distro
+
       - uses: actions/download-artifact@v6
         with:
           name: kas-lock
@@ -61,11 +65,11 @@ jobs:
 
       - name: Run yocto-check-layer
         run: |
-          ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh
+          ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh ../meta-qcom-distro
 
       - name: Run Yocto patchreview
         run: |
-          ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh
+          ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh ../meta-qcom-distro
 
   compile:
     if: github.repository_owner == 'qualcomm-linux'
