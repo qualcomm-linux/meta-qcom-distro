@@ -1,5 +1,7 @@
 # meta-qcom-distro
 
+[![Build on push](https://img.shields.io/github/actions/workflow/status/qualcomm-linux/meta-qcom-distro/push.yml?label=Build%20on%20push)](https://github.com/qualcomm-linux/meta-qcom-distro/actions/workflows/push.yml)
+
 ## Introduction
 
 OpenEmbedded/Yocto Project Reference Distro layer for Qualcomm based platforms.
