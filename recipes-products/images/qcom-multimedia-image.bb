@@ -19,6 +19,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-container \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
+    packagegroup-qcom-security \
     pipewire \
     pipewire-alsa \
     pipewire-modules-meta \
