@@ -3,6 +3,7 @@ SUMMARY = "Userspace utilities for QCOM platforms"
 inherit packagegroup
 
 PACKAGES += " \
+    ${PN}-bluetooth-utils \
     ${PN}-debug-utils \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
@@ -13,11 +14,17 @@ PACKAGES += " \
 
 # Have ${PN} drag in all of the subpackages
 RDEPENDS:${PN} = " \
+    ${PN}-bluetooth-utils \
     ${PN}-debug-utils \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
     ${PN}-support-utils \
+    "
+
+RDEPENDS:${PN}-bluetooth-utils = " \
+    bluez5-obex \
+    bluez5-noinst-tools \
     "
 
 RDEPENDS:${PN}-debug-utils = " \
