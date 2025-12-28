@@ -7,3 +7,9 @@ do_rm_work:prepend:qcom-distro() {
         chmod u+w ${UNPACKDIR} -R
     fi
 }
+
+do_rm_work:prepend:qcom-distro-sota() {
+    if [ -d ${UNPACKDIR} ] ; then
+        chmod u+w ${UNPACKDIR} -R
+    fi
+}
