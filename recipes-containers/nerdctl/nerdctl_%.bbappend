@@ -1,5 +1,6 @@
-INSANE_SKIP:${PN}:arm:qcom-distro += "textrel"
-INSANE_SKIP:${PN}:arm:qcom-distro-sota += "textrel"
+# Go binaries on ARMv7 are built in a strange way
+INSANE_SKIP:${PN}:append:arm:qcom-distro = " textrel"
+INSANE_SKIP:${PN}:append:arm:qcom-distro-sota = " textrel"
 
 # workaround for permissions preventing rm_work to succeed
 do_rm_work:prepend:qcom-distro() {
