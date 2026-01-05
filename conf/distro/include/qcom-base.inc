@@ -7,6 +7,9 @@ SDK_VENDOR = "-qcomsdk"
 
 TARGET_VENDOR = "-qcom"
 
+# Ensure 'qcom-distro' appear at most once in DISTROOVERRIDES
+DISTROOVERRIDES =. "${@ 'qcom-distro:' if d.getVar('DISTRO') != 'qcom-distro' else ''}"
+
 DISTRO_FEATURES:append = " \
     bluetooth \
     efi \
