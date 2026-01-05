@@ -1,2 +1,2 @@
 # Enable testapp
-PACKAGECONFIG:append = " testapp"
+PACKAGECONFIG:append:qcom-distro = " testapp"
