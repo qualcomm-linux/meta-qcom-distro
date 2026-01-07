@@ -25,6 +25,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     pipewire-pulse \
     pipewire-spa-tools \
     pipewire-tools \
+    userspace-resource-manager \
     weston \
     weston-examples \
     weston-init \
