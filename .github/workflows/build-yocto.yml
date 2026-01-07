@@ -72,6 +72,7 @@ jobs:
           ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh ../meta-qcom-distro
 
   compile:
+    needs: [kas-setup, yocto-run-checks]
     if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64-ssd]
     outputs:
