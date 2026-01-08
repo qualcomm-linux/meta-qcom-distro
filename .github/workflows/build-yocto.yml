@@ -121,14 +121,6 @@ jobs:
                 type: additional
                 dirname: "+linux-yocto-dev"
                 yamlfile: ":ci/linux-yocto-dev.yml"
-          - machine: qcom-armv8a
-            distro:
-                name: qcom-distro
-                yamlfile: ':ci/qcom-distro.yml'
-            kernel:
-                type: additional
-                dirname: "+linux-yocto-lts"
-                yamlfile: ":ci/linux-yocto-lts.yml"
           # include kvm compatible machines for the builds
           - machine: qcom-armv8a
             distro:
