@@ -52,6 +52,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: qualcomm-linux/meta-qcom
+          path: ../meta-qcom
           ref: master
 
       - uses: actions/checkout@v4
@@ -61,14 +62,16 @@ jobs:
       - uses: actions/download-artifact@v6
         with:
           name: kas-lock
-          path: ci/
+          path: ../meta-qcom/ci/
 
       - name: Run yocto-check-layer
         run: |
+          cd ../meta-qcom
           ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh ../meta-qcom-distro
 
       - name: Run Yocto patchreview
         run: |
+          cd ../meta-qcom
           ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh ../meta-qcom-distro
 
   compile:
