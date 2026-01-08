@@ -67,7 +67,7 @@ jobs:
       - name: Run yocto-check-layer
         run: |
           cd meta-qcom-distro
-          ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh ../meta-qcom-distro
+          ../meta-qcom/ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh ../meta-qcom-distro
 
       - name: Run Yocto patchreview
         run: |
