@@ -6,6 +6,7 @@ IMAGE_FEATURES += "${@bb.utils.contains('DISTRO_FEATURES', 'sota', '', 'package-
                    ssh-server-openssh"
 
 CORE_IMAGE_BASE_INSTALL += " \
+    packagegroup-qcom-security \
     packagegroup-qcom-utilities-debug-utils \
     packagegroup-qcom-utilities-network-utils \
     packagegroup-qcom-utilities-profile-utils \
