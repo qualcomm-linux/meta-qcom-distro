@@ -1,0 +1,40 @@
+From e1d62da9569217c5984b4247da37d35be3700210 Mon Sep 17 00:00:00 2001
+From: Wei Deng <wei.deng@oss.qualcomm.com>
+Date: Tue, 9 Dec 2025 21:11:09 +0800
+Subject: [PATCH] Use system bus instead of session for obexd
+
+Upstream now has enabled support for system bus using command line
+option. In meta-qcom-distro as session bus is not supported use
+system bus instead of session bus.
+
+Signed-off-by: Wei Deng <wei.deng@oss.qualcomm.com>
+Upstream-Status: Inappropriate [meta-qcom-distro specific change]
+---
+ obexd/src/obex.service.in | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/obexd/src/obex.service.in b/obexd/src/obex.service.in
+index cf4d8c985..a6f94434a 100644
+--- a/obexd/src/obex.service.in
++++ b/obexd/src/obex.service.in
+@@ -1,10 +1,16 @@
+ [Unit]
+ Description=Bluetooth OBEX service
++Requires=bluetooth.service
++After=bluetooth.service
+ 
+ [Service]
++# Set MAP_ROOT for obexd MAP server initialization
++Environment="MAP_ROOT="map-messages""
+ Type=dbus
+ BusName=org.bluez.obex
+-ExecStart=@PKGLIBEXECDIR@/obexd
++ExecStart=@PKGLIBEXECDIR@/obexd -s -a -r /var/bluetooth
++Restart=on-failure
+ 
+ [Install]
++WantedBy=bluetooth.target
+ Alias=dbus-org.bluez.obex.service
+-- 
+2.34.1
+
