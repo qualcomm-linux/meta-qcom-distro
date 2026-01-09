@@ -46,6 +46,7 @@ RDEPENDS:packagegroup-support-utils = "\
     libinput-bin \
     libnl \
     libxml2 \
+    linuxptp \
     pciutils \
     procps \
     zram \
