@@ -1,1 +1,1 @@
-PACKAGECONFIG:append:qcom = " gst"
+PACKAGECONFIG:append:qcom-distro = " gst"
