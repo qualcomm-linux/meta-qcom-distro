@@ -9,14 +9,14 @@ CORE_IMAGE_BASE_INSTALL += " \
     alsa-utils-alsatplg \
     alsa-utils-alsaucm \
     alsa-utils-aplay \
-    docker-compose \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'docker-compose', '', d)} \
     gstreamer1.0 \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
     libcamera \
     libdrm-tests \
-    packagegroup-container \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'packagegroup-container', '', d)} \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
