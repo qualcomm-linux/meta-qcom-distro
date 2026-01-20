@@ -15,6 +15,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     gstreamer1.0-plugins-base \
     gstreamer1.0-plugins-good \
     libcamera \
+    libcamera-gst \
     libdrm-tests \
     packagegroup-container \
     packagegroup-qcom-test-pkgs \
