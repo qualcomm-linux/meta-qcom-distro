@@ -10,6 +10,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     camx-dlkm \
     camx-kodiak \
     camx-lemans \
+    camx-nhx \
     iris-video-dlkm \
     kgsl-dlkm \
     qcom-adreno \
