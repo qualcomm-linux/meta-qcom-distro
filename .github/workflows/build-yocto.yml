@@ -19,7 +19,7 @@ env:
 
 jobs:
   kas-setup:
-    if: github.repository == 'qualcomm-linux/meta-qcom'
+    if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
     steps:
       - name: Update kas-container
@@ -46,10 +46,9 @@ jobs:
           name: kas-lock
           path: ci/*.lock.yml
 
-
   compile_warm_up:
     needs: kas-setup
-    if: github.repository == 'qualcomm-linux/meta-qcom'
+    if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
     strategy:
       fail-fast: true
@@ -91,7 +90,7 @@ jobs:
 
   compile:
     needs: compile_warm_up
-    if: github.repository == 'qualcomm-linux/meta-qcom'
+    if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
     outputs:
       url: ${{ steps.compile_kas.outputs.url }}
