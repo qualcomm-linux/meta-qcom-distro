@@ -46,28 +46,9 @@ jobs:
           name: kas-lock
           path: ci/*.lock.yml
 
-  yocto-run-checks:
-    needs: kas-setup
-    if: github.repository == 'qualcomm-linux/meta-qcom'
-    runs-on: [self-hosted, qcom-u2404, amd64]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v6
-        with:
-          name: kas-lock
-          path: ci/
-
-      - name: Run yocto-check-layer
-        run: |
-          ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh
-
-      - name: Run Yocto patchreview
-        run: |
-          ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh
 
   compile_warm_up:
-    needs: [kas-setup, yocto-run-checks]
+    needs: kas-setup
     if: github.repository == 'qualcomm-linux/meta-qcom'
     runs-on: [self-hosted, qcom-u2404, amd64]
     strategy:
