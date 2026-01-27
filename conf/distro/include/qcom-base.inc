@@ -43,6 +43,7 @@ IMAGE_FSTYPES:remove = "tar.gz"
 INITRAMFS_IMAGE = "initramfs-rootfs-image"
 
 INHERIT += "buildhistory"
+INHERIT += "distrooverrides"
 INHERIT += "image-buildinfo"
 INHERIT += "recipe_sanity"
 
