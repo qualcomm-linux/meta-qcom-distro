@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run kas build
-        uses: ./.github/actions/compile
+        uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
         with:
           machine: ${{matrix.machine}}
           distro_yaml: ${{matrix.distro.yamlfile}}
@@ -191,7 +191,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run kas build
-        uses: ./.github/actions/compile
+        uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
         id: compile_kas
         with:
           machine: ${{matrix.machine}}
