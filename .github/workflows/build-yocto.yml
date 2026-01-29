@@ -96,8 +96,6 @@ jobs:
           - rb3gen2-core-kit
           - qcom-armv8a
         distro:
-          - name: poky-altcfg
-            yamlfile: ""
           - name: qcom-distro
             yamlfile: ':ci/qcom-distro-prop-image.yml'
           - name: qcom-distro-catchall
@@ -151,8 +149,6 @@ jobs:
           - rb1-core-kit
           - sm8750-mtp
         distro:
-          - name: poky-altcfg
-            yamlfile: ""
           - name: qcom-distro
             yamlfile: ':ci/qcom-distro-prop-image.yml'
           - name: qcom-distro-catchall
@@ -199,14 +195,6 @@ jobs:
             distro:
                 name: qcom-distro-kvm
                 yamlfile: ':ci/qcom-distro-kvm.yml'
-            kernel:
-                type: default
-                dirname: ""
-                yamlfile: ""
-          - machine: qcom-armv7a
-            distro:
-                name: poky-altcfg
-                yamlfile: ''
             kernel:
                 type: default
                 dirname: ""
