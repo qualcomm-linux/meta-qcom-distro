@@ -130,22 +130,6 @@ jobs:
                 type: additional
                 dirname: "+linux-yocto-dev"
                 yamlfile: ":ci/linux-yocto-dev.yml"
-          - machine: iq-9075-evk
-            distro:
-                name: qcom-distro
-                yamlfile: ':ci/qcom-distro-prop-image.yml'
-            kernel:
-                type: qcom-next-rt
-                dirname: "+linux-qcom-next-rt"
-                yamlfile: ":ci/linux-qcom-next-rt.yml"
-          - machine: iq-9075-evk
-            distro:
-                name: qcom-distro-kvm
-                yamlfile: ':ci/qcom-distro-kvm.yml'
-            kernel:
-                type: default
-                dirname: ""
-                yamlfile: ""
           - machine: iq-8275-evk
             distro:
                 name: qcom-distro-kvm
