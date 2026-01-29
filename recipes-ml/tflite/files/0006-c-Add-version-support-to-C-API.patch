@@ -1,0 +1,58 @@
+From 42e520631efdb34a1b5093d2d72bc6e4043b923d Mon Sep 17 00:00:00 2001
+From: Tushar Darote <quic_tdarote@quicinc.com>
+Date: Thu, 29 Jan 2026 18:54:32 +0530
+Subject: [PATCH 6/9] c: Add version support to C API
+
+Set up version handling with compile definitions for major, minor, and patch
+versions. Configure shared library properties with version and soversion
+for proper C API versioning.
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/109380]
+Signed-off-by: Tushar Darote <quic_tdarote@quicinc.com>
+---
+ tensorflow/lite/c/CMakeLists.txt | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/c/CMakeLists.txt b/tensorflow/lite/c/CMakeLists.txt
+index 9fcafb14495..7d9a5942cab 100644
+--- a/tensorflow/lite/c/CMakeLists.txt
++++ b/tensorflow/lite/c/CMakeLists.txt
+@@ -14,7 +14,22 @@
+ # limitations under the License.
+ 
+ cmake_minimum_required(VERSION 3.16)
+-project(tensorflow-lite-c C CXX)
++
++set(TF_MAJOR_VERSION "" CACHE STRING "TensorFlow Lite major version")
++set(TF_MINOR_VERSION "" CACHE STRING "TensorFlow Lite minor version")
++set(TF_PATCH_VERSION "" CACHE STRING "TensorFlow Lite patch version")
++set(TF_VERSION_SUFFIX "" CACHE STRING "TensorFlow Lite version suffix")
++
++project(tensorflow-lite-c
++  VERSION "${TF_MAJOR_VERSION}.${TF_MINOR_VERSION}.${TF_PATCH_VERSION}${TF_VERSION_SUFFIX}"
++  LANGUAGES C CXX)
++
++add_compile_definitions(
++  TF_MAJOR_VERSION=${TF_MAJOR_VERSION}
++  TF_MINOR_VERSION=${TF_MINOR_VERSION}
++  TF_PATCH_VERSION=${TF_PATCH_VERSION}
++  TF_VERSION_SUFFIX="${TF_VERSION_SUFFIX}"
++)
+ 
+ option(TFLITE_C_BUILD_SHARED_LIBS "Build shared libraries" ON)
+ 
+@@ -129,6 +144,11 @@ if (TFLITE_C_BUILD_SHARED_LIBS)
+   endif()
+ endif()
+ 
++set_target_properties(tensorflowlite_c PROPERTIES
++  VERSION "${TF_MAJOR_VERSION}.${TF_MINOR_VERSION}.${TF_PATCH_VERSION}${TF_VERSION_SUFFIX}"
++  SOVERSION ${TF_MAJOR_VERSION}
++)
++
+ target_link_libraries(tensorflowlite_c
+   tensorflow-lite
+ )
+-- 
+2.34.1
+

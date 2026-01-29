@@ -1,0 +1,117 @@
+From de587e5f42b09ec416f5ee2d7f9a884232354c03 Mon Sep 17 00:00:00 2001
+From: Tushar Darote <quic_tdarote@quicinc.com>
+Date: Thu, 29 Jan 2026 18:18:00 +0530
+Subject: [PATCH 4/9] cmake: Exclude subdirectories from all builds
+
+Add EXCLUDE_FROM_ALL to add_subdirectory() calls in multiple CMake
+modules to prevent unnecessary compilation of third-party dependencies
+during default builds. This reduces build time and resource usage.
+
+- eigen.cmake
+- farmhash.cmake
+- fft2d.cmake
+- flatbuffers.cmake
+- gemmlowp.cmake
+- neon2sse.cmake
+- ruy.cmake
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/109378]
+Signed-off-by: Tushar Darote <quic_tdarote@quicinc.com>
+---
+ tensorflow/lite/tools/cmake/modules/cpuinfo.cmake     | 1 +
+ tensorflow/lite/tools/cmake/modules/eigen.cmake       | 2 +-
+ tensorflow/lite/tools/cmake/modules/farmhash.cmake    | 1 +
+ tensorflow/lite/tools/cmake/modules/fft2d.cmake       | 1 +
+ tensorflow/lite/tools/cmake/modules/flatbuffers.cmake | 1 +
+ tensorflow/lite/tools/cmake/modules/gemmlowp.cmake    | 1 +
+ tensorflow/lite/tools/cmake/modules/neon2sse.cmake    | 1 +
+ tensorflow/lite/tools/cmake/modules/ruy.cmake         | 1 +
+ 8 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/cmake/modules/cpuinfo.cmake b/tensorflow/lite/tools/cmake/modules/cpuinfo.cmake
+index 5556bec6448..8d1124ff261 100644
+--- a/tensorflow/lite/tools/cmake/modules/cpuinfo.cmake
++++ b/tensorflow/lite/tools/cmake/modules/cpuinfo.cmake
+@@ -41,4 +41,5 @@ set(CPUINFO_BUILD_BENCHMARKS OFF CACHE BOOL "Disable cpuinfo micro-benchmarks")
+ add_subdirectory(
+   "${cpuinfo_SOURCE_DIR}"
+   "${cpuinfo_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+diff --git a/tensorflow/lite/tools/cmake/modules/eigen.cmake b/tensorflow/lite/tools/cmake/modules/eigen.cmake
+index cf73d72fb32..c2ffd3f3d78 100644
+--- a/tensorflow/lite/tools/cmake/modules/eigen.cmake
++++ b/tensorflow/lite/tools/cmake/modules/eigen.cmake
+@@ -99,4 +99,4 @@ set(EIGEN_TEST_SYCL OFF CACHE BOOL "Disable Sycl test")
+ set(EIGEN_SYCL_TRISYCL OFF CACHE BOOL "Disable triSYCL test")
+ # Make sure only MPL2.0 or more permissively licensed code is included.
+ add_compile_definitions(EIGEN_MPL2_ONLY)
+-add_subdirectory("${eigen_SOURCE_DIR}" "${eigen_BINARY_DIR}")
++add_subdirectory("${eigen_SOURCE_DIR}" "${eigen_BINARY_DIR}" EXCLUDE_FROM_ALL)
+diff --git a/tensorflow/lite/tools/cmake/modules/farmhash.cmake b/tensorflow/lite/tools/cmake/modules/farmhash.cmake
+index 9c8e039e6fe..7a5160fa7eb 100644
+--- a/tensorflow/lite/tools/cmake/modules/farmhash.cmake
++++ b/tensorflow/lite/tools/cmake/modules/farmhash.cmake
+@@ -44,4 +44,5 @@ set(FARMHASH_SOURCE_DIR "${farmhash_SOURCE_DIR}" CACHE PATH
+ add_subdirectory(
+   "${CMAKE_CURRENT_LIST_DIR}/farmhash"
+   "${farmhash_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+diff --git a/tensorflow/lite/tools/cmake/modules/fft2d.cmake b/tensorflow/lite/tools/cmake/modules/fft2d.cmake
+index b4169104fae..9d44a2c6865 100644
+--- a/tensorflow/lite/tools/cmake/modules/fft2d.cmake
++++ b/tensorflow/lite/tools/cmake/modules/fft2d.cmake
+@@ -37,4 +37,5 @@ set(FFT2D_SOURCE_DIR "${fft2d_SOURCE_DIR}" CACHE PATH "fft2d source")
+ add_subdirectory(
+   "${CMAKE_CURRENT_LIST_DIR}/fft2d"
+   "${fft2d_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+diff --git a/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake b/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake
+index 8febb1fbd1c..267031de68f 100644
+--- a/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake
++++ b/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake
+@@ -42,6 +42,7 @@ add_definitions(-DNOMINMAX=1)
+ add_subdirectory(
+   "${flatbuffers_SOURCE_DIR}"
+   "${flatbuffers_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+ remove_definitions(-DNOMINMAX)
+ 
+diff --git a/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake b/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
+index 76d9705475b..9c8e2c90c7c 100644
+--- a/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
++++ b/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
+@@ -48,6 +48,7 @@ set(GEMMLOWP_SOURCE_DIR "${gemmlowp_SOURCE_DIR}" CACHE PATH "Source directory")
+ add_subdirectory(
+   "${gemmlowp_SOURCE_DIR}/contrib"
+   "${gemmlowp_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+ 
+ set(BUILD_TESTING ${BUILD_TESTING_TMP})
+diff --git a/tensorflow/lite/tools/cmake/modules/neon2sse.cmake b/tensorflow/lite/tools/cmake/modules/neon2sse.cmake
+index c2612e34bd2..77bcf1acba3 100644
+--- a/tensorflow/lite/tools/cmake/modules/neon2sse.cmake
++++ b/tensorflow/lite/tools/cmake/modules/neon2sse.cmake
+@@ -40,4 +40,5 @@ endif()
+ add_subdirectory(
+   "${neon2sse_SOURCE_DIR}"
+   "${neon2sse_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+diff --git a/tensorflow/lite/tools/cmake/modules/ruy.cmake b/tensorflow/lite/tools/cmake/modules/ruy.cmake
+index 1c5965f94f5..a6632d3247f 100644
+--- a/tensorflow/lite/tools/cmake/modules/ruy.cmake
++++ b/tensorflow/lite/tools/cmake/modules/ruy.cmake
+@@ -37,4 +37,5 @@ set(RUY_SOURCE_DIR "${ruy_SOURCE_DIR}" CACHE PATH "RUY source directory")
+ add_subdirectory(
+   "${ruy_SOURCE_DIR}"
+   "${ruy_BINARY_DIR}"
++  EXCLUDE_FROM_ALL
+ )
+-- 
+2.34.1
+
