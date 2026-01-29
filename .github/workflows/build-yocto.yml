@@ -42,6 +42,19 @@ jobs:
           done
 
       - uses: actions/checkout@v4
+        with:
+          repository: qualcomm-linux/meta-qcom
+          ref: master
+
+      - uses: actions/checkout@v4
+        with:
+          path: meta-qcom-distro
+
+      - name: Prepare kas qcom-distro yml
+        run: |
+          # move meta-qcom-distro layer: from external repo to meta-qcom internal layer
+          cp ci/qcom-distro.yml ci/qcom-distro-full.yml
+          cp meta-qcom-distro/ci/qcom-distro.yml ci/
 
       - name: Run kas lock
         run: |
@@ -86,6 +99,19 @@ jobs:
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: qualcomm-linux/meta-qcom
+          ref: master
+
+      - uses: actions/checkout@v4
+        with:
+          path: meta-qcom-distro
+
+      - name: Prepare kas qcom-distro yml
+        run: |
+          # move meta-qcom-distro layer: from external repo to meta-qcom internal layer
+          cp ci/qcom-distro.yml ci/qcom-distro-full.yml
+          cp meta-qcom-distro/ci/qcom-distro.yml ci/
 
       - name: Run kas build
         uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
@@ -201,6 +227,19 @@ jobs:
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          repository: qualcomm-linux/meta-qcom
+          ref: master
+
+      - uses: actions/checkout@v4
+        with:
+          path: meta-qcom-distro
+
+      - name: Prepare kas qcom-distro yml
+        run: |
+          # move meta-qcom-distro layer: from external repo to meta-qcom internal layer
+          cp ci/qcom-distro.yml ci/qcom-distro-full.yml
+          cp meta-qcom-distro/ci/qcom-distro.yml ci/
 
       - name: Run kas build
         uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
