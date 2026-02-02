@@ -13,6 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     camx-nhx \
     iris-video-dlkm \
     kgsl-dlkm \
+    libdiag-bin \
     qcom-adreno \
     qcom-sensors-binaries \
 "
