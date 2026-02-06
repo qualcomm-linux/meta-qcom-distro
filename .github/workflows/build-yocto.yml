@@ -34,26 +34,19 @@ jobs:
           wget -qO ${KAS_CONTAINER} https://raw.githubusercontent.com/siemens/kas/refs/tags/$LATEST/kas-container
           chmod +x ${KAS_CONTAINER}
 
-      - name: Update kas mirrors
-        run: |
-          for r in $(find ${KAS_REPO_REF_DIR}/* -maxdepth 0 -type d); do
-            echo "pre-fetch: $r"
-            git -C $r fetch --prune origin '+refs/*:refs/*'
-          done
-
       - name: Checkout meta-qcom
         uses: actions/checkout@v4
         with:
           repository: qualcomm-linux/meta-qcom
-          ref: master
+          path: ${{ github.workspace }}/../meta-qcom
 
       - name: Checkout meta-qcom-dsitro
         uses: actions/checkout@v4
 
       - name: Run kas lock
         run: |
-          KAS_CI_BASE=${GITHUB_WORKSPACE}/meta-qcom/ci/base.yml
-          KAS_CI_DISTRO=${GITHUB_WORKSPACE}/meta-qcom-distro/ci/qcom-distro.yml
+          KAS_CI_BASE=${GITHUB_WORKSPACE}/../meta-qcom/ci/base.yml
+          KAS_CI_DISTRO=${GITHUB_WORKSPACE}/../meta-qcom-distro/ci/qcom-distro.yml
           ${KAS_CONTAINER} lock --update ${KAS_CI_BASE}:${KAS_CI_DISTRO}
 
       - name: Upload kas lockfile
