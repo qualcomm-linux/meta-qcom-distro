@@ -38,15 +38,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: qualcomm-linux/meta-qcom
-          path: ${{ github.workspace }}/../meta-qcom
+          path: ${{ github.workspace }}/meta-qcom
 
-      - name: Checkout meta-qcom-dsitro
+      - name: Checkout meta-qcom-distro
         uses: actions/checkout@v4
+        with:
+          path: ${{ github.workspace }}/meta-qcom-distro
 
       - name: Run kas lock
         run: |
-          KAS_CI_BASE=${GITHUB_WORKSPACE}/../meta-qcom/ci/base.yml
-          KAS_CI_DISTRO=${GITHUB_WORKSPACE}/../meta-qcom-distro/ci/qcom-distro.yml
+          KAS_CI_BASE=${GITHUB_WORKSPACE}/meta-qcom/ci/base.yml
+          KAS_CI_DISTRO=${GITHUB_WORKSPACE}/meta-qcom-distro/ci/qcom-distro.yml
           ${KAS_CONTAINER} lock --update ${KAS_CI_BASE}:${KAS_CI_DISTRO}
 
       - name: Upload kas lockfile
