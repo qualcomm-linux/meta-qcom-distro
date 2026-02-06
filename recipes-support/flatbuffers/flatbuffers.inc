@@ -1,3 +1,3 @@
-PV = "25.12.19"
-SRCREV = "7e163021e59cca4f8e1e35a7c828b5c6b7915953"
+PV = "24.3.25"
+SRCREV = "595bf0007ab1929570c7671f091313c8fc20644e"
 SRC_URI = "git://github.com/google/flatbuffers.git;branch=master;protocol=https;tag=v${PV}"
