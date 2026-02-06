@@ -41,11 +41,20 @@ jobs:
             git -C $r fetch --prune origin '+refs/*:refs/*'
           done
 
-      - uses: actions/checkout@v4
+      - name: Checkout meta-qcom
+        uses: actions/checkout@v4
+        with:
+          repository: qualcomm-linux/meta-qcom
+          ref: master
+
+      - name: Checkout meta-qcom-dsitro
+        uses: actions/checkout@v4
 
       - name: Run kas lock
         run: |
-          ${KAS_CONTAINER} lock --update ci/qcom-distro.yml
+          KAS_CI_BASE=${GITHUB_WORKSPACE}/meta-qcom/ci/base.yml
+          KAS_CI_DISTRO=${GITHUB_WORKSPACE}/meta-qcom-distro/ci/qcom-distro.yml
+          ${KAS_CONTAINER} lock --update ${KAS_CI_BASE}:${KAS_CI_DISTRO}
 
       - name: Upload kas lockfile
         uses: actions/upload-artifact@v6
