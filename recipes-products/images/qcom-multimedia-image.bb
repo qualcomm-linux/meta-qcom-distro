@@ -35,3 +35,12 @@ CORE_IMAGE_BASE_INSTALL += " \
 
 # let's make sure we have a good image.
 REQUIRED_DISTRO_FEATURES += "wayland"
+
+# Keep proprietary FastCV bits out of the open-source image
+BAD_RECOMMENDATIONS += " \
+    libfastcvopt1 \
+    libfastcvopt-qcs615-ride-dsp \
+    libfastcvopt-qcs8300-ride-dsp \
+    libfastcvopt-sa8775p-ride-dsp \
+    libfastcvopt-thundercomm-rb3gen2-dsp \
+"
