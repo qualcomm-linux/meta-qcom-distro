@@ -11,6 +11,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     camx-kodiak \
     camx-lemans \
     camx-nhx \
+    camx-talos \
     iris-video-dlkm \
     kgsl-dlkm \
     libdiag-bin \
