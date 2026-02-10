@@ -33,3 +33,5 @@ python __anonymous() {
     if qcom_dtb_default == "multi-dtb":
         d.setVar("KERNEL_DEVICETREE", "")
 }
+
+BAD_RECOMMENDATIONS += "systemd-networkd"
