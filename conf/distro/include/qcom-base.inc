@@ -1,3 +1,5 @@
+DISTRO_NAME = "QCOM Reference Distro with Wayland"
+
 DISTRO_VERSION = "2.0"
 
 # SDK variables.
@@ -13,11 +15,18 @@ DISTROOVERRIDES =. "${@ 'qcom-distro:' if d.getVar('DISTRO') != 'qcom-distro' el
 DISTRO_FEATURES:append = " \
     bluetooth \
     efi \
+    glvnd \
+    opencl \
+    opengl \
     overlayfs \
     pam \
     pni-names \
     ptest \
+    virtualization \
+    vulkan \
+    wayland \
     wifi \
+    x11 \
 "
 
 # Use systemd init manager for system initialization.
