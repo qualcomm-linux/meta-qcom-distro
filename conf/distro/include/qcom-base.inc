@@ -1,4 +1,4 @@
-DISTRO_NAME = "QCOM Reference Distro with Wayland"
+DISTRO_NAME = "Qualcomm Linux Reference Distro"
 
 DISTRO_VERSION = "2.0"
 
