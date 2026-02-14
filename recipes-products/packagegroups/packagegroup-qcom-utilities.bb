@@ -68,6 +68,7 @@ RDEPENDS:${PN}-network-utils = " \
 RDEPENDS:${PN}-profile-utils = " \
     perf \
     powertop \
+    stress-ng \
     sysbench \
     systemd-analyze \
     tiobench \
