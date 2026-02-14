@@ -13,6 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     camx-nhx \
     camx-talos \
     iris-video-dlkm \
+    iris-video-dlkm-blacklist \
     kgsl-dlkm \
     libdiag-bin \
     qcom-adreno \
