@@ -8,6 +8,7 @@ COMPATIBLE_MACHINE:aarch64 = "(.*)"
 
 CORE_IMAGE_BASE_INSTALL += " \
     camx-dlkm \
+    camera-service \
     camx-kodiak \
     camx-lemans \
     camx-nhx \
