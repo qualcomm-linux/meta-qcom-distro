@@ -7,6 +7,7 @@ COMPATIBLE_MACHINE = "^$"
 COMPATIBLE_MACHINE:aarch64 = "(.*)"
 
 CORE_IMAGE_BASE_INSTALL += " \
+    camera-service \
     camx-dlkm \
     camx-kodiak \
     camx-lemans \
