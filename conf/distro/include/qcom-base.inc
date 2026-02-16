@@ -22,6 +22,8 @@ DISTRO_FEATURES:append = " \
     pam \
     pni-names \
     ptest \
+    security \
+    tpm2 \
     virtualization \
     vulkan \
     wayland \
