@@ -69,7 +69,7 @@ RDEPENDS:${PN}-profile-utils = " \
     perf \
     powertop \
     sysbench \
-    systemd-analyze \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-analyze', '', d)} \
     tiobench \
     "
 
