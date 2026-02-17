@@ -25,19 +25,33 @@ _is_dir "$WORK_DIR"
 # script to avoid a contaminated environment.
 BUILDDIR="$(mktemp -p $WORK_DIR -d -t build-yocto-check-layer-XXXX)"
 source $WORK_DIR/oe-core/oe-init-build-env $BUILDDIR
-git -c advice.detachedHead=false -c init.defaultBranch=master clone --quiet --shared $REPO_DIR meta-qcom
+git -c advice.detachedHead=false -c init.defaultBranch=master clone --quiet --shared $REPO_DIR meta-qcom-distro
 
 # Yocto Project layer checking tool
 CMD="yocto-check-layer"
 # Layer to check
-CMD="$CMD meta-qcom"
+CMD="$CMD meta-qcom-distro"
 # Disable auto layer discovery
 CMD="$CMD --no-auto"
 # Layers to process for dependencies
-CMD="$CMD --dependency $WORK_DIR/oe-core/meta"
+CMD="$CMD --dependency"
+CMD="$CMD   $WORK_DIR/oe-core/meta"
+CMD="$CMD   $WORK_DIR/meta-qcom"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-oe"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-networking"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-multimedia"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-python"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-filesystems"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-gnome"
+CMD="$CMD   $WORK_DIR/meta-openembedded/meta-xfce"
+CMD="$CMD   $WORK_DIR/meta-security"
+CMD="$CMD   $WORK_DIR/meta-security/meta-tpm"
+CMD="$CMD   $WORK_DIR/meta-selinux"
+CMD="$CMD   $WORK_DIR/meta-updater"
+CMD="$CMD   $WORK_DIR/meta-virtualization"
 # Disable automatic testing of dependencies
 CMD="$CMD --no-auto-dependency"
 # Set machines to all machines defined in this BSP layer
-CMD="$CMD --machines $(echo $(find meta-qcom/conf/machine/ -maxdepth 1 -name *.conf -exec basename {} .conf \; ))"
+CMD="$CMD --machines $(echo $(find ${WORK_DIR}/meta-qcom/conf/machine/ -maxdepth 1 -name *.conf -exec basename {} .conf \; ))"
 
 exec $CMD
