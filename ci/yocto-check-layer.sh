@@ -27,6 +27,40 @@ BUILDDIR="$(mktemp -p $WORK_DIR -d -t build-yocto-check-layer-XXXX)"
 source $WORK_DIR/oe-core/oe-init-build-env $BUILDDIR
 git -c advice.detachedHead=false -c init.defaultBranch=master clone --quiet --shared $REPO_DIR meta-qcom-distro
 
+# Patch dependent layers otherwise breaking yocto-check-layer
+bitbake-layers create-layer -a meta-patch
+mkdir -p meta-patch/recipes-patch/patch
+# Taint (by forced/invalidated task) changed from nostamp(uuid4):foo to nostamp(uuid4):foo
+echo 'unset do_install[nostamp]' >> meta-patch/recipes-patch/patch/aide_%.bbappend
+# Taint (by forced/invalidated task) changed from nostamp(uuid4):foo to nostamp(uuid4):foo
+echo 'unset do_populate_registry[nostamp]' >> meta-patch/recipes-patch/patch/container-registry-populate.bbappend
+# QA error because of network access
+echo 'unset do_populate_registry[network]' >> meta-patch/recipes-patch/patch/container-registry-populate.bbappend
+# Depends on the package outside of the layer set
+echo 'EXCLUDE_FROM_WORLD = "1"' >> meta-patch/recipes-patch/patch/cockpit-machines_%.bbappend
+# Missing or unbuildable dependency chain was: ['meta-world-pkgdata', 'example-xen-guest-bundle', 'xen-guest-image-minimal']
+echo 'inherit features_check' >> meta-patch/recipes-patch/patch/example-xen-guest-bundle_%.bbappend
+echo 'REQUIRED_DISTRO_FEATURES = "xen"' >> meta-patch/recipes-patch/patch/example-xen-guest-bundle_%.bbappend
+# example-xen-guest-bundle-1.0: Package example-xen-guest-bundle is skipping required QA tests. [installed-vs-shipped]
+echo 'INSANE_SKIP:${PN}:remove = "installed-vs-shipped"' >> meta-patch/recipes-patch/patch/example-xen-guest-bundle_%.bbappend
+# alpine-xen-guest-bundle-3.23: Package alpine-xen-guest-bundle is skipping required QA tests. [installed-vs-shipped]
+echo 'INSANE_SKIP:${PN}:remove = "installed-vs-shipped"' >> meta-patch/recipes-patch/patch/alpine-xen-guest-bundle_%.bbappend
+
+# DISTRO features of qcom-distro
+echo 'DISTRO_FEATURES:append:nodistro = " \
+    efi \
+    glvnd \
+    opencl \
+    overlayfs \
+    pam \
+    pni-names \
+    security \
+    tpm2 \
+    virtualization \
+    wifi \
+    x11 \
+"' >> conf/local.conf
+
 # Yocto Project layer checking tool
 CMD="yocto-check-layer"
 # Layer to check
