@@ -16,7 +16,6 @@ CORE_IMAGE_BASE_INSTALL += " \
     kgsl-dlkm \
     libdiag-bin \
     qcom-adreno \
-    qcom-sensors-binaries \
 "
 CORE_IMAGE_BASE_INSTALL:append = " \
     ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-audioreach', ' packagegroup-audioreach', '', d)} \
