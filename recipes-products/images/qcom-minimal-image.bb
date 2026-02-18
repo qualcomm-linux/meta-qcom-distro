@@ -21,3 +21,7 @@ EXTRA_USERS_PARAMS = "usermod -p '\$6\$UDMimfYF\$akpHo9mLD4z0vQyKzYxYbsdYxnpUD7B
 
 # Adding kernel-devsrc to provide kernel development support on SDK
 TOOLCHAIN_TARGET_TASK += "kernel-devsrc"
+
+# Add RT tools only if the RT kernel is selected
+CORE_IMAGE_EXTRA_INSTALL += "${@bb.utils.contains_any('PREFERRED_PROVIDER_virtual/kernel', \
+                            'linux-qcom-rt linux-qcom-next-rt', 'rt-tests', '', d)}"
