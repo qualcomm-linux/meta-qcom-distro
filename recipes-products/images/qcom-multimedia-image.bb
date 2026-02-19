@@ -26,6 +26,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     pipewire-pulse \
     pipewire-spa-tools \
     pipewire-tools \
+    qcom-sensors-binaries \
     userspace-resource-manager \
     weston \
     weston-examples \
