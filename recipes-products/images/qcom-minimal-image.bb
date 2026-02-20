@@ -25,3 +25,11 @@ TOOLCHAIN_TARGET_TASK += "kernel-devsrc"
 # Add RT tools only if the RT kernel is selected
 CORE_IMAGE_EXTRA_INSTALL += "${@bb.utils.contains_any('PREFERRED_PROVIDER_virtual/kernel', \
                             'linux-qcom-rt linux-qcom-next-rt', 'rt-tests', '', d)}"
+
+# UKI workaround for targets using multi-dtb (dtb provided by the firmware)
+## To be removed once https://lists.openembedded.org/g/openembedded-core/message/231436 is accepted
+python __anonymous() {
+    qcom_dtb_default = d.getVar("QCOM_DTB_DEFAULT")
+    if qcom_dtb_default == "multi-dtb":
+        d.setVar("KERNEL_DEVICETREE", "")
+}
