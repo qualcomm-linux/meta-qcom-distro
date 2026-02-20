@@ -70,7 +70,7 @@ RDEPENDS:${PN}-profile-utils = " \
     powertop \
     stress-ng \
     sysbench \
-    systemd-analyze \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-analyze', '', d)} \
     tiobench \
     "
 
