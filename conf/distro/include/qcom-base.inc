@@ -54,6 +54,7 @@ IMAGE_FSTYPES:remove = "tar.gz"
 INITRAMFS_IMAGE = "initramfs-rootfs-image"
 
 INHERIT += "buildhistory"
+INHERIT += "create-spdx"
 INHERIT += "image-buildinfo"
 INHERIT += "recipe_sanity"
 
