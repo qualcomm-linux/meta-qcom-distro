@@ -223,6 +223,14 @@ jobs:
                 type: u-boot-qcom-6.18
                 dirname: "_linux-qcom-6.18_u-boot-qcom"
                 yamlfile: ":ci/linux-qcom-6.18.yml:ci/u-boot-qcom.yml"
+          - machine: rb3gen2-core-kit-open-fw
+            distro:
+                name: qcom-distro-kvm
+                yamlfile: ':ci/qcom-distro-kvm.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
       - uses: actions/checkout@v4
