@@ -1,0 +1,53 @@
+From 832cc4fb50fd8ba8ddb15c02258d6a58efb72eec Mon Sep 17 00:00:00 2001
+From: James Hilliard <james.hilliard1@gmail.com>
+Date: Mon, 18 Sep 2023 10:34:56 -0600
+Subject: [PATCH 1/9] lite: Add config option to enable benchmark_model
+
+It's handy to have an option to enable the benchmark_model tool
+so that it can be built and installed using the all target which
+is preferable in some cases when packaging tensorflow-lite.
+
+Upstream-Status: Backport [c9a1cecffceb96bc1a116c62039cb893f65120d4]
+Signed-off-by: James Hilliard <james.hilliard1@gmail.com>
+---
+ tensorflow/lite/CMakeLists.txt                 | 1 +
+ tensorflow/lite/tools/benchmark/CMakeLists.txt | 9 ++++++++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 3198ec61e0b..cdd38ff2086 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -64,6 +64,7 @@ include(GNUInstallDirs)
+ include(CMakeDependentOption)
+ option(TFLITE_ENABLE_INSTALL "Enable install rule" OFF)
+ option(TFLITE_ENABLE_LABEL_IMAGE "Enable label_image example" OFF)
++option(TFLITE_ENABLE_BENCHMARK_MODEL "Enable the benchmark_model tool" OFF)
+ option(TFLITE_ENABLE_RUY "Enable experimental RUY integration" OFF)
+ option(TFLITE_ENABLE_RESOURCE "Enable experimental support for resources" ON)
+ option(TFLITE_ENABLE_NNAPI "Enable NNAPI (Android only)." ON)
+diff --git a/tensorflow/lite/tools/benchmark/CMakeLists.txt b/tensorflow/lite/tools/benchmark/CMakeLists.txt
+index 79986f6c0ec..2b639475481 100644
+--- a/tensorflow/lite/tools/benchmark/CMakeLists.txt
++++ b/tensorflow/lite/tools/benchmark/CMakeLists.txt
+@@ -95,9 +95,16 @@ if(TFLITE_ENABLE_GPU)
+ endif()  # TFLITE_ENABLE_GPU
+ 
+ add_executable(benchmark_model
+-  EXCLUDE_FROM_ALL
+   ${TFLITE_BENCHMARK_SRCS}
+ )
++if(TFLITE_ENABLE_BENCHMARK_MODEL)
++  set_target_properties(benchmark_model PROPERTIES EXCLUDE_FROM_ALL FALSE)
++  if(TFLITE_ENABLE_INSTALL)
++    install(TARGETS benchmark_model)
++  endif()  # TFLITE_ENABLE_INSTALL
++else()
++  set_target_properties(benchmark_model PROPERTIES EXCLUDE_FROM_ALL TRUE)
++endif()  # TFLITE_ENABLE_BENCHMARK_MODEL
+ target_compile_options(benchmark_model
+   PRIVATE
+     ${TFLITE_BENCHMARK_CC_OPTIONS}
+-- 
+2.34.1
+
