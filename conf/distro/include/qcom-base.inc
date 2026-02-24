@@ -59,11 +59,5 @@ INHERIT += "recipe_sanity"
 
 BUILDHISTORY_COMMIT = "1"
 
-require conf/distro/include/security_flags.inc
-require conf/distro/include/yocto-space-optimize.inc
-require conf/distro/include/yocto-uninative.inc
-
-INHERIT += "uninative"
-
 # Disable weston idle timeout
 PACKAGECONFIG:append:pn-weston-init = " no-idle-timeout"
