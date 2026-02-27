@@ -42,8 +42,10 @@ IMAGE_FSTYPES += "qcomflash"
 # Set a default package class to avoid surprises
 PACKAGE_CLASSES = "package_rpm"
 
-# Avoid to duplicate the rootfs tarball by generating both tar.gz/tar.xz
-IMAGE_FSTYPES:remove = "tar.gz"
+# Force tarballs being generated, some BSP layers overwrite
+# IMAGE_FSTYPES, so this appends 'tar.gz' regardless of what the BSP
+# tried to remove
+IMAGE_FSTYPES:append = " tar.gz"
 
 # Pull in the initrd image by default
 INITRAMFS_IMAGE = "initramfs-rootfs-image"
