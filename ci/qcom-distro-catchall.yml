@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+
+header:
+  version: 14
+  includes:
+   - ci/qcom-distro.yml
+
+distro: qcom-distro-catchall
+
+target:
+  - qcom-multimedia-image
+  - qcom-multimedia-proprietary-image
+  - qcom-container-orchestration-image
