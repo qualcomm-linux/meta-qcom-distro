@@ -1,0 +1,29 @@
+From 30ab372896886efbc295603310c31a9d2e851e79 Mon Sep 17 00:00:00 2001
+From: Tushar Darote <tdarote@qti.qualcomm.com>
+Date: Fri, 20 Feb 2026 21:56:20 +0530
+Subject: [PATCH 9/9] tflite: Add absl::log dependency for enhanced logging
+ support
+
+This change adds the absl::log library
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/110784]
+Signed-off-by: Tushar Darote <tdarote@qti.qualcomm.com>
+---
+ tensorflow/lite/CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 76dc0637645..bea6e4eb78b 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -728,6 +728,7 @@ target_link_libraries(tensorflow-lite
+     Eigen3::Eigen
+     absl::flags
+     absl::hash
++    absl::log
+     absl::status
+     absl::strings
+     absl::synchronization
+-- 
+2.34.1
+

@@ -1,0 +1,74 @@
+From fc53cdac176fbbd8e283da96c275057caf4e2eae Mon Sep 17 00:00:00 2001
+From: Ivan Evlogiev <ievlogie@qti.qualcomm.com>
+Date: Thu, 22 Jan 2026 16:37:21 +0000
+Subject: [PATCH 8/9] cmake: Add install rule for c interface shared library
+
+- Install c interface library when shared library is enabled
+- Do not install cpp static library when shared library is used
+- Add package config file for shared library
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/109382]
+Signed-off-by: Ivan Evlogiev <ievlogie@qti.qualcomm.com>
+---
+ tensorflow/lite/CMakeLists.txt           |  4 ++--
+ tensorflow/lite/c/CMakeLists.txt         | 14 ++++++++++++++
+ tensorflow/lite/c/tensorflowlite_c.pc.in | 10 ++++++++++
+ 3 files changed, 26 insertions(+), 2 deletions(-)
+ create mode 100644 tensorflow/lite/c/tensorflowlite_c.pc.in
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 2971047b3fc..76dc0637645 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -766,8 +766,8 @@ target_compile_options(tensorflow-lite
+ )
+ add_library(${PROJECT_NAME}::tensorflowlite ALIAS tensorflow-lite)
+ 
+-# The install targets.
+-if(TFLITE_ENABLE_INSTALL)
++# The install targets for static lib.
++if(TFLITE_ENABLE_INSTALL AND NOT TFLITE_C_BUILD_SHARED_LIBS)
+   install(
+     TARGETS tensorflow-lite
+     EXPORT ${PROJECT_NAME}Targets
+diff --git a/tensorflow/lite/c/CMakeLists.txt b/tensorflow/lite/c/CMakeLists.txt
+index 7d9a5942cab..9b7fe9bfe7e 100644
+--- a/tensorflow/lite/c/CMakeLists.txt
++++ b/tensorflow/lite/c/CMakeLists.txt
+@@ -152,3 +152,17 @@ set_target_properties(tensorflowlite_c PROPERTIES
+ target_link_libraries(tensorflowlite_c
+   tensorflow-lite
+ )
++if(TFLITE_ENABLE_INSTALL)
++  install(TARGETS tensorflowlite_c)
++
++  configure_file(
++    tensorflowlite_c.pc.in
++    ${CMAKE_CURRENT_BINARY_DIR}/tensorflowlite_c.pc
++    @ONLY
++  )
++
++  install(
++    FILES ${CMAKE_CURRENT_BINARY_DIR}/tensorflowlite_c.pc
++    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
++  )
++endif()
+diff --git a/tensorflow/lite/c/tensorflowlite_c.pc.in b/tensorflow/lite/c/tensorflowlite_c.pc.in
+new file mode 100644
+index 00000000000..42c5f02a8ad
+--- /dev/null
++++ b/tensorflow/lite/c/tensorflowlite_c.pc.in
+@@ -0,0 +1,10 @@
++prefix=@CMAKE_INSTALL_PREFIX@
++libdir=${prefix}/lib
++includedir=${prefix}/include
++
++Name: tensorflow lite
++Description: tensorflow lite shared library
++Version: @PROJECT_VERSION@
++Requires:
++Libs: -L${libdir} -ltensorflowlite_c
++Cflags: -I${includedir}
+-- 
+2.34.1
+

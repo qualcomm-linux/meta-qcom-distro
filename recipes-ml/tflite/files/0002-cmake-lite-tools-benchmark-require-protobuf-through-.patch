@@ -1,0 +1,31 @@
+From e4bef15bb049dc38bdb670aab732750b3ce1a69f Mon Sep 17 00:00:00 2001
+From: Koen Kooi <koen.kooi@oss.qualcomm.com>
+Date: Thu, 9 Oct 2025 18:11:16 +0200
+Subject: [PATCH 2/9] cmake: lite/tools/benchmark: require protobuf through
+ find-package
+
+The tools needs headers for building and the library for linking, so
+have cmake find the things it needs.
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/109375]
+Signed-off-by: Koen Kooi <koen.kooi@oss.qualcomm.com>
+---
+ tensorflow/lite/tools/benchmark/CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tensorflow/lite/tools/benchmark/CMakeLists.txt b/tensorflow/lite/tools/benchmark/CMakeLists.txt
+index 2b639475481..4eb63985922 100644
+--- a/tensorflow/lite/tools/benchmark/CMakeLists.txt
++++ b/tensorflow/lite/tools/benchmark/CMakeLists.txt
+@@ -16,6 +16,8 @@
+ 
+ # The benchmark tool for Tensorflow Lite.
+ 
++find_package(Protobuf REQUIRED)
++
+ populate_source_vars("${TFLITE_SOURCE_DIR}/tools/benchmark"
+   TFLITE_BENCHMARK_SRCS
+   FILTER "(_test|_plus_flex_main|_performance_options.*)\\.cc$"
+-- 
+2.34.1
+
