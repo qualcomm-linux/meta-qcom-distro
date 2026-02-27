@@ -91,6 +91,12 @@ SRC_URI = " \
     git://github.com/Maratyszcza/FXdiv.git;protocol=https;branch=master;name=fxdiv;destsuffix=${S}/FXdiv \
 "
 
+SRC_URI:append:class-target:arm = " \
+    file://tflite/0010-Revert-Fix-XNNPACK-build-failure-with-when-mcpu-comp.patch \
+    file://cpuinfo/0001-Fix-syscall-undeclared-error-if-built-with-stricter-.patch;patchdir=third_party/cpuinfo \
+    file://cpuinfo/0002-Support-OE-specific-arm-value-for-CMAKE_SYSTEM_PROCE.patch;patchdir=third_party/cpuinfo \
+"
+
 inherit cmake features_check pkgconfig
 
 OECMAKE_SOURCEPATH = "${S}/tensorflow/lite/c"
