@@ -13,20 +13,15 @@ TARGET_VENDOR = "-qcom"
 DISTROOVERRIDES =. "${@ 'qcom-distro:' if d.getVar('DISTRO') != 'qcom-distro' else ''}"
 
 DISTRO_FEATURES:append = " \
-    bluetooth \
     efi \
     glvnd \
     opencl \
-    opengl \
     overlayfs \
     pam \
     pni-names \
-    ptest \
     security \
     tpm2 \
     virtualization \
-    vulkan \
-    wayland \
     wifi \
     x11 \
 "
