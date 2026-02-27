@@ -1,0 +1,40 @@
+From 21b94c7b739cf7e61111e75f00974961e759ed39 Mon Sep 17 00:00:00 2001
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Fri, 27 Feb 2026 00:54:46 +0200
+Subject: [PATCH] Fix syscall() undeclared error if built with stricter build
+ options
+
+If cpuinfo is built with a stricer build flags, it fails on some systems
+with the undeclared function error, because on Glibc syscall() is not a
+part of the headers unless one of the feature macros is defined. Add the
+least intrusive one, _DEFAULT_SOURCE.
+
+cpuinfo/src/api.c:319:23: error: call to undeclared function 'syscall'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+                if CPUINFO_UNLIKELY(syscall(__NR_getcpu, &cpu, NULL, NULL) != 0) {
+                                    ^
+cpuinfo/src/api.c:338:23: error: call to undeclared function 'syscall'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+                if CPUINFO_UNLIKELY(syscall(__NR_getcpu, &cpu, NULL, NULL) != 0) {
+
+
+Closes #171
+
+Upstream-Status: Submitted [https://github.com/pytorch/cpuinfo/pull/374]
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+---
+ src/api.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/api.c b/src/api.c
+index b8c999f32c01..846235a90e3e 100644
+--- a/src/api.c
++++ b/src/api.c
+@@ -1,3 +1,6 @@
++/* for syscall() */
++#define _DEFAULT_SOURCE
++
+ #include <stdbool.h>
+ #include <stddef.h>
+ 
+-- 
+2.47.3
+

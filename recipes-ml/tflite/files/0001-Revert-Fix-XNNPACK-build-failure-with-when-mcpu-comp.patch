@@ -1,0 +1,85 @@
+From 84904eee70d50779031c55ab45a551b5c642431e Mon Sep 17 00:00:00 2001
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Date: Fri, 27 Feb 2026 02:57:18 +0200
+Subject: [PATCH] Revert "Fix XNNPACK build failure with when -mcpu compiler
+ switch is set"
+
+This reverts commit 5d3e0c0e3a0c ("Fix XNNPACK build failure with when
+-mcpu compiler switch is set"). When building for ARM systems, the
+XNNPACK depends on mcpu being set correctly, otherwise build fails with
+the compiler errors:
+
+In file included from ../recipe-sysroot/usr/include/stdio.h:966,
+                 from xnnpack/src/sanitizers.c:7:
+../recipe-sysroot/usr/include/bits/stdio.h: In function 'getchar':
+../recipe-sysroot/usr/include/bits/stdio.h:48:1: sorry, unimplemented: Thumb-1 'hard-float' VFP ABI
+   48 | {
+
+Upstream-Status: Inappropriate [upstream ticket: https://github.com/tensorflow/tensorflow/issues/111155]
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+---
+ .../lite/tools/cmake/modules/xnnpack.cmake    |  7 ++--
+ .../cmake/modules/xnnpack/CMakeLists.txt      | 33 -------------------
+ 2 files changed, 4 insertions(+), 36 deletions(-)
+ delete mode 100644 tensorflow/lite/tools/cmake/modules/xnnpack/CMakeLists.txt
+
+diff --git a/tensorflow/lite/tools/cmake/modules/xnnpack.cmake b/tensorflow/lite/tools/cmake/modules/xnnpack.cmake
+index 6e6ae55b7f37..0a3a5899b876 100644
+--- a/tensorflow/lite/tools/cmake/modules/xnnpack.cmake
++++ b/tensorflow/lite/tools/cmake/modules/xnnpack.cmake
+@@ -40,9 +40,10 @@ set(XNNPACK_BUILD_BENCHMARKS OFF CACHE BOOL "Disable XNNPACK benchmarks.")
+ 
+ # The following line adds project of PTHREADPOOL, FP16 and XNNPACK which are
+ # needed to compile XNNPACK delegate of TFLite.
+-# Note, we introduce an intermediate subdirectory, see ${TFLITE_SOURCE_DIR}/tools/cmake/modules/xnnpack/CMakeLists.txt
+-# for details.
+-add_subdirectory(${TFLITE_SOURCE_DIR}/tools/cmake/modules/xnnpack)
++add_subdirectory(
++  "${xnnpack_SOURCE_DIR}"
++  "${xnnpack_BINARY_DIR}"
++)
+ 
+ include_directories(
+   AFTER
+diff --git a/tensorflow/lite/tools/cmake/modules/xnnpack/CMakeLists.txt b/tensorflow/lite/tools/cmake/modules/xnnpack/CMakeLists.txt
+deleted file mode 100644
+index f156dc34ef0e..000000000000
+--- a/tensorflow/lite/tools/cmake/modules/xnnpack/CMakeLists.txt
++++ /dev/null
+@@ -1,33 +0,0 @@
+-#
+-# Copyright 2022 The TensorFlow Authors. All Rights Reserved.
+-#
+-# Licensed under the Apache License, Version 2.0 (the "License");
+-# you may not use this file except in compliance with the License.
+-# You may obtain a copy of the License at
+-#
+-#      https://www.apache.org/licenses/LICENSE-2.0
+-#
+-# Unless required by applicable law or agreed to in writing, software
+-# distributed under the License is distributed on an "AS IS" BASIS,
+-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-# See the License for the specific language governing permissions and
+-# limitations under the License.
+-
+-# The "-mcpu=" switch might be introduced externaly into CMake: either in <LANG>_FLAGS or
+-# as part of CC, CXX, ASM environmental variables (to be stored in CMAKE_<LANG>_COMPILER_ARG1).
+-# This switch is not compatible with XNNPACK build mechanism and causes the XNNPACK compilation
+-# break due to "unsupported instructions". This switch needs to be removed for XNNPACK
+-# In order to isolate the changes only for XNNPACK and its depencencies, a subfolder is
+-# introduced.
+-
+-foreach(FLAG IN ITEMS CMAKE_ASM_FLAGS CMAKE_ASM_COMPILER_ARG1 CMAKE_C_FLAGS CMAKE_C_COMPILER_ARG1 CMAKE_CXX_FLAGS CMAKE_CXX_COMPILER_ARG1)
+-  if(${FLAG})
+-    string(REGEX REPLACE "-mcpu=[-a-zA-Z0-9_.^$*+?]*" "" _tmp ${${FLAG}})
+-    set(${FLAG} ${_tmp})
+-  endif()
+-endforeach()
+-
+-add_subdirectory(
+-  "${xnnpack_SOURCE_DIR}"
+-  "${xnnpack_BINARY_DIR}"
+-)
+-- 
+2.47.3
+

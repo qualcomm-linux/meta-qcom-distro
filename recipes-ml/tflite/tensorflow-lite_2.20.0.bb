@@ -89,6 +89,9 @@ SRC_URI = " \
     git://github.com/ARM-software/kleidiai.git;protocol=https;branch=main;name=kleidiai;destsuffix=${S}/kleidiai \
     git://github.com/google/pthreadpool.git;protocol=https;branch=main;name=pthreadpool;destsuffix=${S}/pthreadpool \
     git://github.com/Maratyszcza/FXdiv.git;protocol=https;branch=master;name=fxdiv;destsuffix=${S}/FXdiv \
+    file://0001-Revert-Fix-XNNPACK-build-failure-with-when-mcpu-comp.patch \
+    file://0001-Fix-syscall-undeclared-error-if-built-with-stricter-.patch;patchdir=third_party/cpuinfo \
+    file://0001-Support-OE-specific-arm-value-for-CMAKE_SYSTEM_PROCE.patch;patchdir=third_party/cpuinfo \
 "
 
 inherit cmake features_check pkgconfig
