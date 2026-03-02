@@ -14,6 +14,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-bluetooth-utils \
     packagegroup-qcom-utilities-filesystem-utils \
     resize-rootfs \
+    wowlan-enable \
 "
 
 # Default root password: oelinux123

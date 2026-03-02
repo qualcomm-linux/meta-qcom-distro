@@ -1,0 +1,14 @@
+[Unit]
+Description=Enable WoWLAN magic packet on phy0
+After=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sh -c 'until iw phy0 info; do sleep 1; done'
+ExecStart=/usr/sbin/iw phy0 wowlan enable magic-packet
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
