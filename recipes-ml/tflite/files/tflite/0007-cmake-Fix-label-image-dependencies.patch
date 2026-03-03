@@ -1,0 +1,39 @@
+From 0676f58864633579a6e4702dc47868a2f98e9708 Mon Sep 17 00:00:00 2001
+From: Ivan Evlogiev <ievlogie@qti.qualcomm.com>
+Date: Thu, 22 Jan 2026 16:32:46 +0000
+Subject: [PATCH 7/9] cmake: Fix label image dependencies
+
+- Properly find Protobuf package
+- Link with protobuf library from protobuf package
+- Link with abseil dependency of protobuf
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/109381]
+Signed-off-by: Ivan Evlogiev <ievlogie@qti.qualcomm.com>
+---
+ tensorflow/lite/examples/label_image/CMakeLists.txt | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/examples/label_image/CMakeLists.txt b/tensorflow/lite/examples/label_image/CMakeLists.txt
+index 07ab2343ae5..31d31661ca3 100644
+--- a/tensorflow/lite/examples/label_image/CMakeLists.txt
++++ b/tensorflow/lite/examples/label_image/CMakeLists.txt
+@@ -16,6 +16,8 @@
+ 
+ # The label_image example for Tensorflow Lite.
+ 
++find_package(Protobuf REQUIRED)
++
+ populate_source_vars("${TFLITE_SOURCE_DIR}/examples/label_image"
+   TFLITE_LABEL_IMAGE_SRCS
+   FILTER "_test\\.cc$"
+@@ -84,5 +86,6 @@ target_compile_options(label_image
+ target_link_libraries(label_image
+   tensorflow-lite
+   profiling_info_proto
+-  libprotobuf
++  protobuf::libprotobuf
++  absl::log
+ )
+-- 
+2.34.1
+
