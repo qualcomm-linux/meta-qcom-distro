@@ -75,18 +75,6 @@ INHERIT += "uninative"
 # GCC Version
 GCCVERSION = "13.4%"
 
-# Easily switch between rust versions just by changing RUST_VERSION variable
-RUST_VERSION ?= "1.75.0"
-
-PREFERRED_VERSION_cargo ?= "${RUST_VERSION}"
-PREFERRED_VERSION_cargo-native ?= "${RUST_VERSION}"
-PREFERRED_VERSION_libstd-rs ?= "${RUST_VERSION}"
-PREFERRED_VERSION_rust ?= "${RUST_VERSION}"
-PREFERRED_VERSION_rust-cross-${TARGET_ARCH} ?= "${RUST_VERSION}"
-PREFERRED_VERSION_rust-llvm ?= "${RUST_VERSION}"
-PREFERRED_VERSION_rust-llvm-native ?= "${RUST_VERSION}"
-PREFERRED_VERSION_rust-native ?= "${RUST_VERSION}"
-
 # Enable security compiler and linker flags.
 require qcom-security_flags.inc
 

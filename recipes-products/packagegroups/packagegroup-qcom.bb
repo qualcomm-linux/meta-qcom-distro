@@ -34,6 +34,7 @@ RDEPENDS:${PN}:append:qcom-custom-distro = "\
 
 RDEPENDS:packagegroup-support-utils = "\
     can-utils \
+    can-utils-access \
     chrony \
     dosfstools \
     ethtool \
@@ -45,6 +46,7 @@ RDEPENDS:packagegroup-support-utils = "\
     libinput-bin \
     libnl \
     libxml2 \
+    linuxptp \
     pciutils \
     procps \
     zram \
