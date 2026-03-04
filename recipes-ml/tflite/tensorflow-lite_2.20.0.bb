@@ -24,7 +24,6 @@ TF_LITE_VERSION = "${PV}"
 TF_LITE_MAJOR = "${@d.getVar('PV').split('.')[0]}"
 TF_LITE_MINOR = "${@d.getVar('PV').split('.')[1]}"
 TF_LITE_PATCH = "0"
-TF_LITE_BRANCH = "r${TF_LITE_MAJOR}.${TF_LITE_MINOR}"
 
 SRCREV_FORMAT = "tensorflow_cpuinfo_farmhash_fft2d_fp16_fxdiv_gemmlowp_kleidiai_mlDtypes_openclHeaders_pthreadpool_ruy_vulkanHeaders_xnnpack"
 
@@ -66,7 +65,7 @@ SRCREV_vulkanHeaders = "32c07c0c5334aea069e518206d75e002ccd85389"
 SRCREV_xnnpack = "585e73e63cb35c8a416c83a48ca9ab79f7f7d45e"
 
 SRC_URI = " \
-    git://github.com/tensorflow/tensorflow.git;name=tensorflow;branch=${TF_LITE_BRANCH};protocol=https;tag=v${TF_LITE_VERSION} \
+    git://github.com/tensorflow/tensorflow.git;name=tensorflow;nobranch=1;protocol=https;tag=v${TF_LITE_VERSION} \
     file://tflite/0001-lite-Add-config-option-to-enable-benchmark_model.patch \
     file://tflite/0002-cmake-lite-tools-benchmark-require-protobuf-through-.patch \
     file://tflite/0003-feat-tflite-Add-dynamic-OpenCL-library-loading-suppo.patch \
