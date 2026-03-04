@@ -1,0 +1,28 @@
+name: Build on PR
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'README.md'
+      - 'README'
+      - 'SECURITY.md'
+
+permissions:
+  checks: write
+  pull-requests: write
+  contents: read
+  packages: read
+
+jobs:
+  event-file:
+    name: "Upload event file"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Upload
+      uses: actions/upload-artifact@v6
+      with:
+        name: Event File
+        path: ${{ github.event_path }}
+  build-pr:
+    uses: ./.github/workflows/build-yocto.yml
+
