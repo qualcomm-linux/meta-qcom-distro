@@ -1,0 +1,16 @@
+name: Build on push
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  checks: write
+  pull-requests: write
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-yocto.yml
