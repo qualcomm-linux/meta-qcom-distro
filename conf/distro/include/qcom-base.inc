@@ -45,6 +45,10 @@ PACKAGE_CLASSES = "package_rpm"
 # Avoid to duplicate the rootfs tarball by generating both tar.gz/tar.xz
 IMAGE_FSTYPES:remove = "tar.gz"
 
+# Extended SPDX / SBOM options
+## Include kernel config by default in SBOM
+SPDX_INCLUDE_KERNEL_CONFIG ?= "1"
+
 # Pull in the initrd image by default
 INITRAMFS_IMAGE = "initramfs-rootfs-image"
 
