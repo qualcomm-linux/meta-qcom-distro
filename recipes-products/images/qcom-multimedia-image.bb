@@ -32,6 +32,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     weston-examples \
     weston-init \
     wireplumber \
+    libfreeaptx \
 "
 
 # IMSDK currently only used and tested on ARMv8 (aarch64) machines.
