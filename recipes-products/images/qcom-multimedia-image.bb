@@ -29,6 +29,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     pipewire-spa-tools \
     pipewire-tools \
     tensorflow-lite-tools \
+    pactl-bin \
     userspace-resource-manager \
     weston \
     weston-examples \
