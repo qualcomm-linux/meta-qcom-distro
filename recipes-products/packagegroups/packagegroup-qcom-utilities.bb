@@ -63,6 +63,7 @@ RDEPENDS:${PN}-network-utils = " \
     rsync \
     smbclient \
     tcpdump \
+    wowlan-udev \
     "
 
 RDEPENDS:${PN}-profile-utils = " \
