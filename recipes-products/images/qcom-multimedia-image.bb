@@ -40,3 +40,5 @@ CORE_IMAGE_BASE_INSTALL:append:aarch64 = " gst-plugins-imsdk-oss-meta"
 
 # let's make sure we have a good image.
 REQUIRED_DISTRO_FEATURES += "wayland"
+
+IMAGE_INSTALL:append = " pulseaudio-server "
