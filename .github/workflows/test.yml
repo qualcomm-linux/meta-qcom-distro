@@ -29,14 +29,11 @@ jobs:
           - qcom-armv7a
           - rb1-core-kit
         distro:
-          - name: poky-altcfg
           - name: qcom-distro
         kernel:
           - ""
           - _linux-qcom-6.18
         exclude:
-          - distro: poky-altcfg
-            kernel: _linux-qcom-6.18
           - machine: qcom-armv7a
             kernel: _linux-qcom-6.18
     steps:
@@ -149,14 +146,10 @@ jobs:
           - qcs9100-ride-sx
           - rb1-core-kit
         distro:
-          - name: poky-altcfg
           - name: qcom-distro
         kernel:
           - ""
           - _linux-qcom-6.18
-        exclude:
-          - distro: poky-altcfg
-            kernel: _linux-qcom-6.18
     steps:
       - id: print-condition
         name: "Print condition"
