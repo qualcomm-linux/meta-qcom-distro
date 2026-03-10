@@ -134,7 +134,7 @@ jobs:
     outputs:
       url: ${{ steps.compile_kas.outputs.url }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         machine:
           - iq-615-evk
