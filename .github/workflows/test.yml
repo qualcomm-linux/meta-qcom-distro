@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run lava-test-plans
-        uses: ./.github/actions/lava-test-plans
+        uses: qualcomm-linux/meta-qcom/.github/actions/lava-test-plans@master
         with:
           machine: ${{ matrix.machine }}
           distro_name: ${{ matrix.distro.name }}
@@ -63,7 +63,7 @@ jobs:
 
       - name: "List jobs"
         id: listjobs
-        uses: ./.github/actions/list-jobs
+        uses: qualcomm-linux/meta-qcom/.github/actions/list-jobs@master
         with:
           prefix: "boottest"
           build_id: ${{ github.run_id }}
@@ -163,7 +163,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run lava-test-plans
-        uses: ./.github/actions/lava-test-plans
+        uses: qualcomm-linux/meta-qcom/.github/actions/lava-test-plans@master
         with:
           machine: ${{ matrix.machine }}
           distro_name: ${{ matrix.distro.name }}
@@ -185,7 +185,7 @@ jobs:
 
       - name: "List jobs"
         id: listjobs
-        uses: ./.github/actions/list-jobs
+        uses: qualcomm-linux/meta-qcom/.github/actions/list-jobs@master
         with:
           prefix: "premerge"
           build_id: ${{ github.run_id }}
@@ -239,7 +239,7 @@ jobs:
 
       - name: Generate Summary
         id: generate-summary
-        uses: ./.github/actions/test-job-summary
+        uses: qualcomm-linux/meta-qcom/.github/actions/test-job-summary@master
         with:
           build_id: ${{ github.run_id }}
           gh_token: ${{ secrets.GITHUB_TOKEN }}
