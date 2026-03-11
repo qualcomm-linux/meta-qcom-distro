@@ -60,3 +60,5 @@ BUILDHISTORY_COMMIT = "1"
 
 # Disable weston idle timeout
 PACKAGECONFIG:append:pn-weston-init = " no-idle-timeout"
+
+PACKAGECONFIG:append:pn-qemu = " virtfs"
