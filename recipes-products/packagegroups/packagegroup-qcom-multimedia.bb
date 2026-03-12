@@ -31,5 +31,7 @@ RDEPENDS:${PN}:append:qcom-custom-distro = "\
     packagegroup-qcom-graphics \
     packagegroup-qcom-iot-base-utils \
     packagegroup-qcom-video \
+    packagegroup-qcom-sailmb-usr \
+    packagegroup-qcom-sailmb-ipcc \
     "
 
