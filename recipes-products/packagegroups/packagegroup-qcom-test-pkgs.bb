@@ -27,4 +27,5 @@ RDEPENDS:${PN} = "\
 
 RDEPENDS:${PN}:append:aarch64 = " \
     fastrpc-tests \
+    fastcv-apps \
     "
