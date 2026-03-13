@@ -1,0 +1,40 @@
+From 388a511a7070d1ea9c6b8d2d98e6fa9a3efb0e87 Mon Sep 17 00:00:00 2001
+From: Li Lu <1487442471@qq.com>
+Date: Wed, 18 Feb 2026 09:24:26 +0800
+Subject: [PATCH] meson.build: fix open_how include with glibc-2.43+
+
+Signed-off-by: Li Lu <1487442471@qq.com>
+Upstream-Status: Backport [https://github.com/lxc/lxc/commit/5e68a7a633659039d9b114d2b75fdba0df51e52c]
+---
+ meson.build          | 1 +
+ src/lxc/open_utils.h | 2 ++
+ 2 files changed, 3 insertions(+)
+
+diff --git a/meson.build b/meson.build
+index 31f5472c5..637ee9873 100644
+--- a/meson.build
++++ b/meson.build
+@@ -664,6 +664,7 @@ endforeach
+ 
+ ## Types.
+ decl_headers = '''
++#include <fcntl.h>
+ #include <uchar.h>
+ #include <sys/mount.h>
+ #include <sys/stat.h>
+diff --git a/src/lxc/open_utils.h b/src/lxc/open_utils.h
+index 7ff5945c7..c9b978dbf 100644
+--- a/src/lxc/open_utils.h
++++ b/src/lxc/open_utils.h
+@@ -25,6 +25,8 @@ struct open_how {
+ 	__u64 mode;
+ 	__u64 resolve;
+ };
++#else
++#include <fcntl.h>
+ #endif
+ 
+ /* how->resolve flags for openat2(2). */
+-- 
+2.34.1
+

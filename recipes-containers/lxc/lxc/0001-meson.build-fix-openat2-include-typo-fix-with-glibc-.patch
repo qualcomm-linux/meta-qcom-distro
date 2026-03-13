@@ -1,0 +1,29 @@
+From 66ca3b2dee22d2d256e74ec55de2e5b0c975037c Mon Sep 17 00:00:00 2001
+From: Joonas Niilola <juippis@gentoo.org>
+Date: Sun, 15 Feb 2026 17:42:39 +0200
+Subject: [PATCH] meson.build: fix openat2 include typo, fix with glibc-2.43
+ +FORTIFY
+
+Closes: https://github.com/lxc/lxc/issues/4641
+Signed-off-by: Joonas Niilola <juippis@gentoo.org>
+Upstream-Status: Backport [https://github.com/lxc/lxc/commit/511e4db8f2a5b47cdd41eef482647492ce5b0f77]
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 637ee9873..a6bb21a94 100644
+--- a/meson.build
++++ b/meson.build
+@@ -557,7 +557,7 @@ foreach ident: [
+     ['move_mount',        '''#include <sys/mount.h>'''],
+     ['openat2',           '''#include <sys/types.h>
+                              #include <sys/stat.h>
+-                             #include <fctnl.h>'''],
++                             #include <fcntl.h>'''],
+     ['open_tree',         '''#include <sys/mount.h>'''],
+     ['personality',       '''#include <sys/personality.h>'''],
+     ['pidfd_open',        '''#include <stdlib.h>
+-- 
+2.34.1
+
