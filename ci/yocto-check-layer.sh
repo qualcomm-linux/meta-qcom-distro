@@ -32,10 +32,6 @@ bitbake-layers create-layer -a meta-patch
 mkdir -p meta-patch/recipes-patch/patch
 # Taint (by forced/invalidated task) changed from nostamp(uuid4):foo to nostamp(uuid4):foo
 echo 'unset do_install[nostamp]' >> meta-patch/recipes-patch/patch/aide_%.bbappend
-# Taint (by forced/invalidated task) changed from nostamp(uuid4):foo to nostamp(uuid4):foo
-echo 'unset do_populate_registry[nostamp]' >> meta-patch/recipes-patch/patch/container-registry-populate.bbappend
-# QA error because of network access
-echo 'unset do_populate_registry[network]' >> meta-patch/recipes-patch/patch/container-registry-populate.bbappend
 # Depends on the package outside of the layer set
 echo 'EXCLUDE_FROM_WORLD = "1"' >> meta-patch/recipes-patch/patch/cockpit-machines_%.bbappend
 # Missing or unbuildable dependency chain was: ['meta-world-pkgdata', 'example-xen-guest-bundle', 'xen-guest-image-minimal']
