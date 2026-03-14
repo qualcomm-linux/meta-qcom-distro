@@ -20,6 +20,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     libcamera-gst \
     libdrm-tests \
     ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'packagegroup-container', '', d)} \
+    ${@ 'packagegroup-qcom-oss' if d.getVar('PN') == 'qcom-multimedia-image' else ''} \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
