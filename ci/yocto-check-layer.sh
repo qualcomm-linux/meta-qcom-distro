@@ -41,6 +41,8 @@ echo 'REQUIRED_DISTRO_FEATURES = "xen"' >> meta-patch/recipes-patch/patch/exampl
 echo 'INSANE_SKIP:${PN}:remove = "installed-vs-shipped"' >> meta-patch/recipes-patch/patch/example-xen-guest-bundle_%.bbappend
 # alpine-xen-guest-bundle-3.23: Package alpine-xen-guest-bundle is skipping required QA tests. [installed-vs-shipped]
 echo 'INSANE_SKIP:${PN}:remove = "installed-vs-shipped"' >> meta-patch/recipes-patch/patch/alpine-xen-guest-bundle_%.bbappend
+# Missing or unbuildable dependency chain was: ['meta-world-pkgdata', 'virt-viewer', 'spice-gtk', 'gstreamer1.0-vaapi']
+echo 'DEPENDS:remove = "gstreamer1.0-vaapi"' >> meta-patch/recipes-patch/patch/spice-gtk_%.bbappend
 
 # DISTRO features of qcom-distro
 echo 'DISTRO_FEATURES:append:nodistro = " \
