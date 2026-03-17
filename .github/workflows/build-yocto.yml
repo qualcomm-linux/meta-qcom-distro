@@ -86,7 +86,7 @@ jobs:
           ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh
 
   compile_warm_up:
-    needs: [kas-setup, yocto-run-checks]
+    needs: kas-setup
     if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
     strategy:
@@ -137,6 +137,7 @@ jobs:
       fail-fast: false
       matrix:
         machine:
+          - glymur-crd
           - iq-615-evk
           - iq-8275-evk
           - iq-9075-evk
@@ -203,6 +204,30 @@ jobs:
             distro:
                 name: qcom-distro
                 yamlfile: ':ci/qcom-distro.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
+          - machine: qcs615-ride
+            distro:
+                name: poky-altcfg
+                yamlfile: ''
+            kernel:
+                type: u-boot-qcom-6.18
+                dirname: "_linux-qcom-6.18_u-boot-qcom"
+                yamlfile: ":ci/linux-qcom-6.18.yml:ci/u-boot-qcom.yml"
+          - machine: rb3gen2-core-kit
+            distro:
+                name: poky-altcfg
+                yamlfile: ''
+            kernel:
+                type: u-boot-qcom-6.18
+                dirname: "_linux-qcom-6.18_u-boot-qcom"
+                yamlfile: ":ci/linux-qcom-6.18.yml:ci/u-boot-qcom.yml"
+          - machine: rb3gen2-core-kit-open-fw
+            distro:
+                name: qcom-distro-kvm
+                yamlfile: ':ci/qcom-distro-kvm.yml'
             kernel:
                 type: default
                 dirname: ""
