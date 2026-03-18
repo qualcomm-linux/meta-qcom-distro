@@ -34,6 +34,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     weston-examples \
     weston-init \
     wireplumber \
+    dpdk \
 "
 
 # IMSDK currently only used and tested on ARMv8 (aarch64) machines.
