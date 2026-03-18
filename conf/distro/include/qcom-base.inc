@@ -15,6 +15,7 @@ DISTROOVERRIDES =. "${@ 'qcom-distro:' if d.getVar('DISTRO') != 'qcom-distro' el
 DISTRO_FEATURES:append = " \
     efi \
     glvnd \
+    minidebuginfo \
     opencl \
     overlayfs \
     pam \
