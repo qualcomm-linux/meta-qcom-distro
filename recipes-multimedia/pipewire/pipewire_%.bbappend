@@ -1,8 +1,3 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
-
-SRC_URI:append:qcom-distro = " \
-    file://0001-module-protocol-native-Fix-socket-activation.patch \
-"
 # Enable pipewire-pulse as a system-wide service
 SYSTEMD_SERVICE:${PN}-pulse:qcom-distro = "pipewire-pulse.service"
 SYSTEMD_AUTO_ENABLE:${PN}-pulse:qcom-distro = "enable"
