@@ -4,4 +4,4 @@ CFLAGS:append:qcom-distro = " -Wno-deprecated-declarations"
 
 # netcf support fails to build with gnulib v202601.
 # Temporarily disable it in PACKAGECONFIG to allow libvirt compilation.
-PACKAGECONFIG:remove = "netcf"
+PACKAGECONFIG:remove:qcom-distro = "netcf"
