@@ -68,7 +68,7 @@ SRC_URI = " \
     git://github.com/tensorflow/tensorflow.git;name=tensorflow;nobranch=1;protocol=https;tag=v${TF_LITE_VERSION} \
     file://tflite/0001-lite-Add-config-option-to-enable-benchmark_model.patch \
     file://tflite/0002-cmake-lite-tools-benchmark-require-protobuf-through-.patch \
-    file://tflite/0003-feat-tflite-Add-dynamic-OpenCL-library-loading-suppo.patch \
+    file://tflite/0003-feat-tflite-Use-fixed-OpenCL-library-name-for-compat.patch \
     file://tflite/0004-cmake-Exclude-subdirectories-from-all-builds.patch \
     file://tflite/0005-c-Force-delegate-symbols-from-shared-library.patch \
     file://tflite/0006-c-Add-version-support-to-C-API.patch \
