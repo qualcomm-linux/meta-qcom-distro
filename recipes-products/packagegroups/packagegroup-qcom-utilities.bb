@@ -61,6 +61,7 @@ RDEPENDS:${PN}-network-utils = " \
     openssh-scp \
     openssh-ssh \
     rsync \
+    sigma-dut \
     smbclient \
     tcpdump \
     wowlan-udev \
