@@ -63,3 +63,6 @@ BUILDHISTORY_COMMIT = "1"
 PACKAGECONFIG:append:pn-weston-init = " no-idle-timeout"
 
 PACKAGECONFIG:append:pn-qemu = " virtfs"
+
+# Make /var/tmp a persistent real directory
+FILESYSTEM_PERMS_TABLES:remove = "files/fs-perms-volatile-tmp.txt"
