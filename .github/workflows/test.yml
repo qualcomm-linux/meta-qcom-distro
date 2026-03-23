@@ -37,8 +37,9 @@ jobs:
           - machine: qcom-armv7a
             kernel: _linux-qcom-6.18
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Run lava-test-plans
@@ -57,8 +58,9 @@ jobs:
     outputs:
       jobmatrix: ${{ steps.listjobs.outputs.jobmatrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: "List jobs"
@@ -158,8 +160,9 @@ jobs:
         run: |
           echo "${RESULT}"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Run lava-test-plans
@@ -179,8 +182,9 @@ jobs:
     outputs:
       jobmatrix: ${{ steps.listjobs.outputs.jobmatrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: "List jobs"
@@ -233,8 +237,9 @@ jobs:
       summary_id: ${{ steps.generate-summary.outputs.artifact_id }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Generate Summary
