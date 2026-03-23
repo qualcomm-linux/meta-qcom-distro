@@ -265,3 +265,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pattern: build-url*
+
+  build_successful:
+    needs: compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build completed successfully
+        run: echo "All compile matrix jobs succeeded and artifacts uploaded to S3 bucket"
