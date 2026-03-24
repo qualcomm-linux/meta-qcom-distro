@@ -20,6 +20,7 @@ RDEPENDS:${PN} = "\
     openssh-sftp-server \
     pulseaudio-misc \
     rng-tools \
+    sigma-dut \
     util-linux \
     v4l-utils \
     yavta \
