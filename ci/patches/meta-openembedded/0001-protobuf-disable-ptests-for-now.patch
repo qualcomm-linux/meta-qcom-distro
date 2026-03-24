@@ -1,0 +1,35 @@
+From 77ea4610d8d62ecb0bd3c4463172fe3b4d1a264f Mon Sep 17 00:00:00 2001
+From: Ross Burton <ross.burton@arm.com>
+Date: Tue, 24 Mar 2026 10:53:17 +0000
+Subject: [PATCH] protobuf: disable ptests for now
+
+oe-core just moved from pkgconfig to pkgconf, which has broken the
+ptest buikd due to how fragile the compilation was.
+
+This will be revisited to build the tests properly, but for now simply
+disable the ptests.
+
+Signed-off-by: Ross Burton <ross.burton@arm.com>
+Signed-off-by: Khem Raj <khem.raj@oss.qualcomm.com>
+Upstream-Status: Submitted [https://lore.kernel.org/r/20260324105318.2150394-1-ross.burton@arm.com/]
+---
+ meta-oe/recipes-devtools/protobuf/protobuf_6.33.6.bb | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/meta-oe/recipes-devtools/protobuf/protobuf_6.33.6.bb b/meta-oe/recipes-devtools/protobuf/protobuf_6.33.6.bb
+index 104c0f2c6322..4af48b0b990b 100644
+--- a/meta-oe/recipes-devtools/protobuf/protobuf_6.33.6.bb
++++ b/meta-oe/recipes-devtools/protobuf/protobuf_6.33.6.bb
+@@ -53,6 +53,9 @@ LANG_SUPPORT = "cpp ${@bb.utils.contains('PACKAGECONFIG', 'python', 'python', ''
+ CXXFLAGS:append:mipsarcho32 = " -latomic"
+ CXXFLAGS:append:riscv32 = " -latomic"
+ 
++# The ptests are not buildable now that pkgconf is being used, disable until fixed.
++PTEST_ENABLED = "0"
++
+ do_compile_ptest() {
+ 	mkdir -p "${B}/${TEST_SRC_DIR}"
+ 
+-- 
+2.47.3
+

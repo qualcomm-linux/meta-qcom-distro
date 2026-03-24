@@ -10,6 +10,10 @@ repos:
 
   meta-openembedded:
     url: https://github.com/openembedded/meta-openembedded
+    patches:
+      fixup:
+        repo: meta-qcom
+        path: ci/patches/meta-openembedded/0001-protobuf-disable-ptests-for-now.patch
     layers:
       meta-filesystems:
       meta-gnome:
