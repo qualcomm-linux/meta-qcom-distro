@@ -51,11 +51,13 @@ jobs:
         id: pr_comment_prep
         run: |
           echo "## Test run [workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" > pr-comment.txt
-          echo "## Test jobs for commit ${{ github.event.workflow_run.head_sha }}" >> pr-comment.txt
+          echo "## Test jobs for commit ${GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA}" >> pr-comment.txt
           PR_NUMBER=$(cat "artifacts/Event File/event.json" | jq -r ".number")
           RESULT_FILE_NAME=$(find ./results_summary/ -type f)
           cat "${RESULT_FILE_NAME}" >> pr-comment.txt
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
 
       - name: Comment on PR
         uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3
