@@ -130,7 +130,7 @@ jobs:
           distro_name: ${{matrix.distro.name}}
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
-          cache_dir: ${CACHE_DIR}
+          cache_dir: ${{env.CACHE_DIR}}
           sdk: ${{inputs.sdk}}
 
   compile:
@@ -253,7 +253,7 @@ jobs:
           distro_name: ${{matrix.distro.name}}
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
-          cache_dir: ${CACHE_DIR}
+          cache_dir: ${{env.CACHE_DIR}}
           sdk: ${{inputs.sdk}}
 
   publish_summary:
