@@ -32,3 +32,6 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
 # be an error. Disable the check as we need to include boot firmware into the
 # image.
 ERROR_QA:remove = "license-exception"
+
+# Drop packages that cause incompatible license conflicts in the SDK
+TOOLCHAIN_TARGET_TASK:remove = "gst-plugins-imsdk-oss-meta"
