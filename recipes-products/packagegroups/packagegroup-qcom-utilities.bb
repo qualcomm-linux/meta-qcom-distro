@@ -9,6 +9,7 @@ PACKAGES += " \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
     ${PN}-profile-utils \
+    ${PN}-python3-devtool-utils \
     ${PN}-support-utils \
     "
 
@@ -19,6 +20,7 @@ RDEPENDS:${PN} = " \
     ${PN}-filesystem-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
+    ${PN}-python3-devtool-utils \
     ${PN}-support-utils \
     "
 
@@ -85,4 +87,13 @@ RDEPENDS:${PN}-support-utils = " \
     tinyalsa \
     trace-cmd \
     usbutils \
+    "
+
+RDEPENDS:${PN}-python3-devtool-utils = " \
+    git \
+    python3-ensurepip \
+    python3-pip \
+    python3-setuptools \
+    python3-venv \
+    python3-wheel \
     "
