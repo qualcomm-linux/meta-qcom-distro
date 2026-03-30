@@ -269,7 +269,7 @@ jobs:
 
   publish_summary:
     needs: compile
-    if: always()
+    if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
     runs-on: ubuntu-latest
     steps:
       - uses: qualcomm-linux/meta-qcom/.github/actions/print-build-output@master
@@ -278,6 +278,7 @@ jobs:
           pattern: build-url*
 
   build_successful:
+    if: github.repository_owner == 'qualcomm-linux'
     needs: compile
     runs-on: ubuntu-latest
     steps:
