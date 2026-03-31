@@ -1,6 +1,6 @@
 header:
   version: 14
-
-local_conf_header:
-  kernelprovider: |
-    PREFERRED_PROVIDER_virtual/kernel = "linux-yocto-dev"
+  includes:
+    - ci/meta-qcom.yml
+    - repo: meta-qcom
+      file: ci/linux-yocto-dev.yml
