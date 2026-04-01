@@ -101,11 +101,11 @@ jobs:
           - qcom-armv8a
         distro:
           - name: qcom-distro
-            yamlfile: ':ci/qcom-distro-prop-image.yml'
+            yamlfile: ':ci/qcom-distro.yml'
           - name: qcom-distro-catchall
             yamlfile: ':ci/qcom-distro-catchall.yml'
           - name: performance
-            yamlfile: ':ci/qcom-distro-prop-image.yml:ci/performance.yml'
+            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml'
         kernel:
           - type: default
             dirname: ""
@@ -157,11 +157,11 @@ jobs:
           - sm8750-mtp
         distro:
           - name: qcom-distro
-            yamlfile: ':ci/qcom-distro-prop-image.yml'
+            yamlfile: ':ci/qcom-distro.yml'
           - name: qcom-distro-catchall
             yamlfile: ':ci/qcom-distro-catchall.yml'
           - name: performance
-            yamlfile: ':ci/qcom-distro-prop-image.yml:ci/performance.yml'
+            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml'
         kernel:
           - type: default
             dirname: ""
@@ -177,7 +177,7 @@ jobs:
           - machine: qcom-armv8a
             distro:
                 name: qcom-distro
-                yamlfile: ':ci/qcom-distro-prop-image.yml'
+                yamlfile: ':ci/qcom-distro.yml'
             kernel:
                 type: additional
                 dirname: "_linux-yocto-dev"
@@ -185,7 +185,7 @@ jobs:
           - machine: iq-9075-evk
             distro:
                 name: qcom-distro
-                yamlfile: ':ci/qcom-distro-prop-image.yml'
+                yamlfile: ':ci/qcom-distro.yml'
             kernel:
                 type: qcom-next-rt
                 dirname: "_linux-qcom-next-rt"
