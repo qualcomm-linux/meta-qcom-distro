@@ -8,6 +8,7 @@ IMAGE_FEATURES += "${@bb.utils.contains('DISTRO_FEATURES', 'sota', '', 'package-
 CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-security \
     packagegroup-qcom-utilities-debug-utils \
+    packagegroup-qcom-utilities-git-utils \
     packagegroup-qcom-utilities-network-utils \
     packagegroup-qcom-utilities-profile-utils \
     packagegroup-qcom-utilities-support-utils \
