@@ -2,7 +2,8 @@
 
 header:
   version: 14
-  includes:
-    - ci/meta-qcom.yml
-    - repo: meta-qcom
-      file: ci/mirror.yml
+
+repos:
+  meta-qcom:
+    url: https://github.com/qualcomm-linux/meta-qcom
+    branch: master
