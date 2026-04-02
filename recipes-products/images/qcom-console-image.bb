@@ -16,4 +16,5 @@ CORE_IMAGE_BASE_INSTALL += " \
 
 CORE_IMAGE_EXTRA_INSTALL += " \
     libgomp \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'phone', 'modemmanager', '', d)} \
 "
