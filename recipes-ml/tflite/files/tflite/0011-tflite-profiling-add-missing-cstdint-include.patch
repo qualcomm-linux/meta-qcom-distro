@@ -1,0 +1,32 @@
+From 2ed0be9857113f4714ac932ed2f6d1b7eefbcecf Mon Sep 17 00:00:00 2001
+From: Tushar Darote <tdarote@qti.qualcomm.com>
+Date: Wed, 1 Apr 2026 16:34:40 +0530
+Subject: [PATCH] tflite: profiling: add missing <cstdint> include
+
+profile_summary_formatter.h uses uint32_t without including <cstdint>.
+This breaks builds with strict toolchains such as Yocto/Clang.
+
+Add the required standard header to make the code C++ compliant.
+
+Upstream-Status: Backport
+Upstream-Commit: 9dbee43
+Signed-off-by: Tushar Darote <tdarote@qti.qualcomm.com>
+---
+ tensorflow/lite/profiling/profile_summary_formatter.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tensorflow/lite/profiling/profile_summary_formatter.h b/tensorflow/lite/profiling/profile_summary_formatter.h
+index 9c7a13530bb..074fc93b167 100644
+--- a/tensorflow/lite/profiling/profile_summary_formatter.h
++++ b/tensorflow/lite/profiling/profile_summary_formatter.h
+@@ -15,6 +15,7 @@ limitations under the License.
+ #ifndef TENSORFLOW_LITE_PROFILING_PROFILE_SUMMARY_FORMATTER_H_
+ #define TENSORFLOW_LITE_PROFILING_PROFILE_SUMMARY_FORMATTER_H_
+ 
++#include <cstdint>
+ #include <functional>
+ #include <map>
+ #include <memory>
+-- 
+2.34.1
+
