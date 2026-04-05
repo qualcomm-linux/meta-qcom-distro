@@ -19,6 +19,7 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     camxfirmware-talos:LICENSE.qcom-2 \
     firmware-qcom-boot-glymur:LICENSE.qcom-2 \
     firmware-qcom-boot-iq-x7181:LICENSE.qcom-2 \
+    firmware-qcom-boot-kaanapali:LICENSE.qcom-2 \
     firmware-qcom-boot-qcs615:LICENSE.qcom-2 \
     firmware-qcom-boot-qcs6490:LICENSE.qcom-2 \
     firmware-qcom-boot-qcs8300:LICENSE.qcom-2 \
