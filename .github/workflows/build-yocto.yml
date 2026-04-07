@@ -208,7 +208,7 @@ jobs:
                 yamlfile: ""
           - machine: qcom-armv7a
             distro:
-                name: qcom-distro-multimedia-image
+                name: qcom-distro
                 yamlfile: ':ci/qcom-distro-multimedia-image.yml'
             kernel:
                 type: default
