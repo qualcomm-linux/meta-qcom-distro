@@ -2,7 +2,7 @@
 # qcom-multimedia-image
 
 # Prevent closed-source packages from being installed into the image
-BAD_RECOMMENDATIONS = " \
+BAD_RECOMMENDATIONS += " \
     libfastcvdsp-stub1 \
     libfastcvopt1 \
     libvulkan-adreno1 \
