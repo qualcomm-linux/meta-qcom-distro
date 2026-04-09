@@ -13,7 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     camx-lemans \
     camx-nhx \
     camx-talos \
-    gst-plugins-imsdk \
+    gst-plugins-imsdk-prop \
     iris-video-dlkm \
     kgsl-dlkm \
     libdiag-bin \
