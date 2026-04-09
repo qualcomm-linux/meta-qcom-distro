@@ -12,6 +12,10 @@ CORE_IMAGE_BASE_INSTALL += " \
     packagegroup-qcom-utilities-profile-utils \
     packagegroup-qcom-utilities-support-utils \
     ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'packagegroup-qcom-virtualization', '', d)} \
+    ${@bb.utils.contains_any('PREFERRED_PROVIDER_virtual/kernel', \
+        'linux-qcom linux-qcom-rt', 'qps615-dlkm qps615-firmware', '', d)} \
+    ${@bb.utils.contains_any('PREFERRED_PROVIDER_virtual/kernel', \
+        'linux-qcom linux-qcom-rt', 'qps615-dlkm qps615-firmware', '', d)} \
 "
 
 CORE_IMAGE_EXTRA_INSTALL += " \
