@@ -1,0 +1,99 @@
+From 300945802736006c51c72137d7a04177ef3e3a6b Mon Sep 17 00:00:00 2001
+From: Tushar Darote <tdarote@qti.qualcomm.com>
+Date: Fri, 3 Apr 2026 16:45:24 +0530
+Subject: [PATCH] tflite/c: Force delegate symbols into tensorflowlite_c library
+
+Adds a dummy source file that references delegate APIs to prevent
+link-time symbol stripping from tensorflowlite_c.
+
+Upstream-Status: Inappropriate [downstream linkage workaround]
+
+This patch is specific to older architectures and build behavior.
+Upstream TensorFlow has since changed relevant architecture handling,
+and a different fix is implemented upstream:
+https://github.com/tensorflow/tensorflow/pull/109379
+
+Signed-off-by: Tushar Darote <tdarote@qti.qualcomm.com>
+---
+ tensorflow/lite/c/CMakeLists.txt            |  1 +
+ tensorflow/lite/c/force_delegate_symbols.cc | 56 +++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
+ create mode 100644 tensorflow/lite/c/force_delegate_symbols.cc
+
+diff --git a/tensorflow/lite/c/CMakeLists.txt b/tensorflow/lite/c/CMakeLists.txt
+index c60694931ea..47671fc2eb4 100644
+--- a/tensorflow/lite/c/CMakeLists.txt
++++ b/tensorflow/lite/c/CMakeLists.txt
+@@ -88,6 +88,7 @@ add_library(tensorflowlite_c ${TFLITE_C_LIBTYPE}
+   c_api_internal.h
+   c_api_types.h
+   common.h
++  force_delegate_symbols.cc
+ )
+ 
+ if (TFLITE_C_BUILD_SHARED_LIBS)
+diff --git a/tensorflow/lite/c/force_delegate_symbols.cc b/tensorflow/lite/c/force_delegate_symbols.cc
+new file mode 100644
+index 00000000000..56ae5716ee9
+--- /dev/null
++++ b/tensorflow/lite/c/force_delegate_symbols.cc
+@@ -0,0 +1,56 @@
++/*
++ *Copyright (c) 2023 Qualcomm Innovation Center, Inc.
++ *
++ *Redistribution and use in source and binary forms, with or without
++ *modification, are permitted (subject to the limitations in the
++ *disclaimer below) provided that the following conditions are met:
++ *
++ *    * Redistributions of source code must retain the above copyright
++ *      notice, this list of conditions and the following disclaimer.
++ *
++ *    * Redistributions in binary form must reproduce the above
++ *      copyright notice, this list of conditions and the following
++ *      disclaimer in the documentation and/or other materials provided
++ *      with the distribution.
++ *
++ *    * Neither the name of Qualcomm Innovation Center nor the names of its
++ *      contributors may be used to endorse or promote products derived
++ *      from this software without specific prior written permission.
++ *
++ * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE
++ * GRANTED BY THIS LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT
++ * HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED
++ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
++ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
++ * IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
++ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
++ * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
++ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
++ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
++ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
++ * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ */
++
++#include <cstdio>
++
++#include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
++#include "tensorflow/lite/delegates/gpu/delegate.h"
++#include "tensorflow/lite/tools/evaluation/utils.h"
++#include "tensorflow/lite/delegates/external/external_delegate.h"
++
++void dummy() {
++    char buf[64] = {0};
++#if TFLITE_BUILD_WITH_XNNPACK_DELEGATE
++    snprintf(buf, 64, "%p\n", TfLiteXNNPackDelegateCreate);
++    snprintf(buf, 64, "%p\n", TfLiteXNNPackDelegateDelete);
++#endif
++    snprintf(buf, 64, "%p\n", TfLiteExternalDelegateCreate);
++    snprintf(buf, 64, "%p\n", TfLiteExternalDelegateDelete);
++#if TFLITE_SUPPORTS_GPU_DELEGATE
++    snprintf(buf, 64, "%p\n", TfLiteGpuDelegateV2Create);
++    snprintf(buf, 64, "%p\n", TfLiteGpuDelegateV2Delete);
++#endif
++}
++
+-- 
+2.34.1
+
