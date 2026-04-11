@@ -1,0 +1,35 @@
+From 39265604d05b0af0e85d5237eadcb88688b107a4 Mon Sep 17 00:00:00 2001
+From: "Khem Raj via lists.yoctoproject.org"
+ <raj.khem=gmail.com@lists.yoctoproject.org>
+Date: Tue, 7 Apr 2026 16:01:39 -0700
+Subject: [PATCH] wic: wic need to be moved to files/wic within the layer to be
+ found/used
+
+Upstream-Status: Submitted [https://lists.yoctoproject.org/g/yocto-patches/message/3658]
+
+Signed-off-by: Khem Raj <khem.raj@oss.qualcomm.com>
+Signed-off-by: Jose Quaresma <jose.quaresma@oss.qualcomm.com>
+---
+ {wic => files/wic}/beaglebone-yocto-verity.wks.in        | 0
+ {wic => files/wic}/systemd-bootdisk-dmverity-hash.wks.in | 0
+ {wic => files/wic}/systemd-bootdisk-dmverity.wks.in      | 0
+ 3 files changed, 0 insertions(+), 0 deletions(-)
+ rename {wic => files/wic}/beaglebone-yocto-verity.wks.in (100%)
+ rename {wic => files/wic}/systemd-bootdisk-dmverity-hash.wks.in (100%)
+ rename {wic => files/wic}/systemd-bootdisk-dmverity.wks.in (100%)
+
+diff --git a/wic/beaglebone-yocto-verity.wks.in b/files/wic/beaglebone-yocto-verity.wks.in
+similarity index 100%
+rename from wic/beaglebone-yocto-verity.wks.in
+rename to files/wic/beaglebone-yocto-verity.wks.in
+diff --git a/wic/systemd-bootdisk-dmverity-hash.wks.in b/files/wic/systemd-bootdisk-dmverity-hash.wks.in
+similarity index 100%
+rename from wic/systemd-bootdisk-dmverity-hash.wks.in
+rename to files/wic/systemd-bootdisk-dmverity-hash.wks.in
+diff --git a/wic/systemd-bootdisk-dmverity.wks.in b/files/wic/systemd-bootdisk-dmverity.wks.in
+similarity index 100%
+rename from wic/systemd-bootdisk-dmverity.wks.in
+rename to files/wic/systemd-bootdisk-dmverity.wks.in
+-- 
+2.53.0
+
