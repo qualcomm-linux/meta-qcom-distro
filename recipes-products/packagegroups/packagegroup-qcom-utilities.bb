@@ -6,6 +6,7 @@ PACKAGES += " \
     ${PN}-bluetooth-utils \
     ${PN}-debug-utils \
     ${PN}-filesystem-utils \
+    ${PN}-git-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
     ${PN}-profile-utils \
@@ -17,6 +18,7 @@ RDEPENDS:${PN} = " \
     ${PN}-bluetooth-utils \
     ${PN}-debug-utils \
     ${PN}-filesystem-utils \
+    ${PN}-git-utils \
     ${PN}-gpu-utils \
     ${PN}-network-utils \
     ${PN}-support-utils \
@@ -85,4 +87,8 @@ RDEPENDS:${PN}-support-utils = " \
     tinyalsa \
     trace-cmd \
     usbutils \
+    "
+
+RDEPENDS:${PN}-git-utils = " \
+    git \
     "
