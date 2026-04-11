@@ -28,6 +28,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     pipewire-pulse \
     pipewire-spa-tools \
     pipewire-tools \
+    pulseaudio-pactl \
     tensorflow-lite-tools \
     thermald \
     userspace-resource-manager \
