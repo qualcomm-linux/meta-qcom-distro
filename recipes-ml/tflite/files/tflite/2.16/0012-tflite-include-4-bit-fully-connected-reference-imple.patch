@@ -1,0 +1,49 @@
+From 89e2932b1164e5a72dc7c81bfa975b561341c80d Mon Sep 17 00:00:00 2001
+From: Tushar Darote <tdarote@qti.qualcomm.com>
+Date: Mon, 27 Apr 2026 19:13:40 +0530
+Subject: [PATCH] tflite: include 4-bit fully connected reference
+ implementation in CMake build
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+TensorFlow Lite 2.16’s CMake build does not include
+kernels/internal/optimized/4bit/fully_connected_reference.cc in
+TFLITE_KERNEL_SRCS.
+
+The corresponding header (fully_connected_reference.h) emits non-inline
+4-bit fully connected helper symbols (e.g. ReferenceBatchQuantizeFloats4Bit),
+which are required on ARMv7 when the reference implementation is selected.
+Because the .cc file is not linked, CMake-based builds fail with undefined
+reference errors, while Bazel builds succeed.
+
+Explicitly append fully_connected_reference.cc to TFLITE_KERNEL_SRCS to
+restore link completeness. This matches Bazel behavior and does not change
+runtime behavior.
+
+This issue is exposed on ARMv7; ARMv8 typically selects the NEON path and
+does not require the reference implementation.
+
+Upstream-Status: Inappropriate [TensorFlow Lite 2.16.x is no longer maintained upstream; the issue is resolved in later releases via refactoring]
+Signed-off-by: Tushar Darote <tdarote@qti.qualcomm.com>
+---
+ tensorflow/lite/CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 2861aff5103..68a93b8480e 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -534,6 +534,9 @@ populate_tflite_source_vars("kernels"
+   TFLITE_KERNEL_SRCS
+   FILTER "(.*_test_util_internal|test_.*|.*_ops_wrapper)\\.(cc|h)"
+ )
++list(APPEND TFLITE_KERNEL_SRCS
++  ${CMAKE_CURRENT_SOURCE_DIR}/kernels/internal/optimized/4bit/fully_connected_reference.cc
++)
+ populate_tflite_source_vars("kernels/internal" TFLITE_KERNEL_INTERNAL_SRCS)
+ populate_tflite_source_vars("kernels/internal/optimized"
+   TFLITE_KERNEL_INTERNAL_OPT_SRCS
+-- 
+2.34.1
+
