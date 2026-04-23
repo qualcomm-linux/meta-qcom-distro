@@ -2,6 +2,11 @@ name: Build Yocto
 
 on:
   workflow_call:
+    inputs:
+      profile:
+        required: false
+        type: string
+        default: "full" # values: pr | full
     outputs:
       artifacts_url:
         description: "URL to retrieve build artifacts"
@@ -234,11 +239,14 @@ jobs:
                 yamlfile: ""
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
-      - uses: actions/checkout@v6
+      - name: checkout
+        if: inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Run kas build
+        if: inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')
         uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
         id: compile_kas
         with:
