@@ -70,9 +70,9 @@ SRC_URI = " \
     file://tflite/0002-cmake-lite-tools-benchmark-require-protobuf-through-.patch \
     file://tflite/0003-feat-tflite-Use-fixed-OpenCL-library-name-for-compat.patch \
     file://tflite/0004-cmake-Exclude-subdirectories-from-all-builds.patch \
-    file://tflite/0005-c-Force-delegate-symbols-from-shared-library.patch \
+    file://tflite/2.20/0005-c-Force-delegate-symbols-from-shared-library.patch \
     file://tflite/0006-c-Add-version-support-to-C-API.patch \
-    file://tflite/0007-cmake-Fix-label-image-dependencies.patch \
+    file://tflite/2.20/0007-cmake-Fix-label-image-dependencies.patch \
     file://tflite/0008-cmake-Add-install-rule-for-c-interface-shared-librar.patch \
     file://tflite/0009-tflite-Add-absl-log-dependency-for-enhanced-logging-.patch \
     git://github.com/google/farmhash;name=farmhash;destsuffix=tensorflow-lite-${TF_LITE_VERSION}/third_party/farmhash/;branch=master;protocol=https \
@@ -93,7 +93,7 @@ SRC_URI = " \
 SRC_URI:append:class-target:arm = " \
     file://tflite/0010-Revert-Fix-XNNPACK-build-failure-with-when-mcpu-comp.patch \
     file://cpuinfo/0001-Fix-syscall-undeclared-error-if-built-with-stricter-.patch;patchdir=third_party/cpuinfo \
-    file://cpuinfo/0002-Support-OE-specific-arm-value-for-CMAKE_SYSTEM_PROCE.patch;patchdir=third_party/cpuinfo \
+    file://cpuinfo/2.20/0002-Support-OE-specific-arm-value-for-CMAKE_SYSTEM_PROCE.patch;patchdir=third_party/cpuinfo \
 "
 
 inherit cmake features_check pkgconfig
