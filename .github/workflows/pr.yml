@@ -12,6 +12,7 @@ permissions:
   pull-requests: write
   contents: read
   packages: read
+  actions: read
 
 jobs:
   event-file:
@@ -23,6 +24,15 @@ jobs:
       with:
         name: Event File
         path: ${{ github.event_path }}
+        
+  pr-to-workflow-dependency:
+    name: "PR To Workflow Dependency"
+    uses: qualcomm/qcom-reusable-workflows/.github/workflows/qswat-reusable-pr-to-workflow-dependency.yml@qswat-release-v1
+    with:
+      workflow_id: ${{ github.run_id }}
+      run_attempt: ${{ github.run_attempt }}
+      pr_number: ${{ github.event.pull_request.number }}
+      
   build-pr:
     uses: ./.github/workflows/build-yocto.yml
     with:
