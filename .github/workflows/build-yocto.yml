@@ -3,10 +3,10 @@ name: Build Yocto
 on:
   workflow_call:
     inputs:
-      sdk:
+      profile:
         required: false
         type: string
-        default: "0"
+        default: "full" # values: pr | full
     outputs:
       artifacts_url:
         description: "URL to retrieve build artifacts"
@@ -97,25 +97,16 @@ jobs:
       fail-fast: true
       matrix:
         machine:
-          - rb3gen2-core-kit
+          - glymur-crd
           - qcom-armv8a
+          - rb3gen2-core-kit
         distro:
           - name: qcom-distro
             yamlfile: ':ci/qcom-distro.yml'
-          - name: qcom-distro-catchall
-            yamlfile: ':ci/qcom-distro-catchall.yml'
-          - name: performance
-            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml'
         kernel:
           - type: default
             dirname: ""
             yamlfile: ""
-          - type: 6.18
-            dirname: "_linux-qcom-6.18"
-            yamlfile: ":ci/linux-qcom-6.18.yml"
-          - type: rt-6.18-distro-kvm
-            dirname: "_linux-qcom-rt-6.18_qcom-distro-kvm"
-            yamlfile: ":ci/linux-qcom-rt-6.18.yml:ci/qcom-distro-kvm.yml"
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
       - uses: actions/checkout@v6
@@ -131,7 +122,6 @@ jobs:
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
           cache_dir: ${{env.CACHE_DIR}}
-          sdk: ${{inputs.sdk}}
 
   compile:
     needs: compile_warm_up
@@ -150,10 +140,12 @@ jobs:
           - iq-x7181-evk
           - kaanapali-mtp
           - qcm6490-idp
+          - qcom-armv8a
           - qcs615-ride
           - qcs8300-ride-sx
           - qcs9100-ride-sx
           - rb1-core-kit
+          - rb3gen2-core-kit
           - sm8750-mtp
         distro:
           - name: qcom-distro
@@ -172,6 +164,23 @@ jobs:
           - type: rt-6.18-distro-kvm
             dirname: "_linux-qcom-rt-6.18_qcom-distro-kvm"
             yamlfile: ":ci/linux-qcom-rt-6.18.yml:ci/qcom-distro-kvm.yml"
+        exclude:
+          # Exclude jobs from compile_warm_up
+          - machine: glymur-crd
+            distro:
+                name: qcom-distro
+            kernel:
+                type: default
+          - machine: qcom-armv8a
+            distro:
+                name: qcom-distro
+            kernel:
+                type: default
+          - machine: rb3gen2-core-kit
+            distro:
+                name: qcom-distro
+            kernel:
+                type: default
         include:
           # Additional builds for specific machines
           - machine: qcom-armv8a
@@ -240,11 +249,14 @@ jobs:
                 yamlfile: ""
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
-      - uses: actions/checkout@v6
+      - name: checkout
+        if: inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Run kas build
+        if: inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')
         uses: qualcomm-linux/meta-qcom/.github/actions/compile@master
         id: compile_kas
         with:
@@ -254,7 +266,6 @@ jobs:
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
           cache_dir: ${{env.CACHE_DIR}}
-          sdk: ${{inputs.sdk}}
 
   publish_summary:
     needs: compile
