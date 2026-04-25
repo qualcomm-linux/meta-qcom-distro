@@ -1,4 +1,5 @@
 name: Build on PR
+run-name: "${{ github.base_ref }}: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
