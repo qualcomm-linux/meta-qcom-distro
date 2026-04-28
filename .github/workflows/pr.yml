@@ -3,6 +3,9 @@ run-name: "${{ github.base_ref }}: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
+    branches:
+      - main
+      - wrynose
     paths-ignore:
       - 'README.md'
       - 'README'
