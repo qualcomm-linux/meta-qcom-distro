@@ -5,6 +5,10 @@ header:
 
 distro: qcom-distro
 
+defaults:
+  repos:
+    branch: master
+
 repos:
   meta-qcom-distro:
 
@@ -21,29 +25,23 @@ repos:
 
   meta-virtualization:
     url: https://git.yoctoproject.org/git/meta-virtualization
-    branch: master
 
   meta-audioreach:
     url: https://github.com/AudioReach/meta-audioreach
-    branch: master
 
   meta-selinux:
-    branch: master
     url: https://git.yoctoproject.org/meta-selinux
 
   meta-updater:
-    branch: master
     url: https://github.com/uptane/meta-updater
 
   meta-security:
     url: https://git.yoctoproject.org/meta-security
-    branch: master
     layers:
       .:
       meta-tpm:
 
   meta-dpdk:
-    branch: master
     url: https://git.yoctoproject.org/meta-dpdk
 
 local_conf_header:
