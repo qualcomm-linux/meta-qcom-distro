@@ -1,0 +1,12 @@
+[Unit]
+Description=Create WiFi VIFs based on NetworkManager profiles
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/nm-wifi-vif-create.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
