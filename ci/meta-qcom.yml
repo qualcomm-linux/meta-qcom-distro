@@ -6,4 +6,4 @@ header:
 repos:
   meta-qcom:
     url: https://github.com/qualcomm-linux/meta-qcom
-    branch: master
+    branch: wrynose

@@ -7,7 +7,7 @@ distro: qcom-distro
 
 defaults:
   repos:
-    branch: master
+    branch: wrynose
 
 repos:
   meta-qcom-distro:
@@ -25,9 +25,11 @@ repos:
 
   meta-virtualization:
     url: https://git.yoctoproject.org/git/meta-virtualization
+    branch: master
 
   meta-audioreach:
     url: https://github.com/AudioReach/meta-audioreach
+    branch: master
 
   meta-selinux:
     url: https://git.yoctoproject.org/meta-selinux
@@ -37,12 +39,14 @@ repos:
 
   meta-security:
     url: https://git.yoctoproject.org/meta-security
+    branch: master
     layers:
       .:
       meta-tpm:
 
   meta-dpdk:
     url: https://git.yoctoproject.org/meta-dpdk
+    branch: master
 
 local_conf_header:
   virtualization:
