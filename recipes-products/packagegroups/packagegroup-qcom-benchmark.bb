@@ -5,5 +5,6 @@ inherit packagegroup
 
 RDEPENDS:${PN} = "\
     coremark \
+    dhrystone \
     glmark2 \
     "
