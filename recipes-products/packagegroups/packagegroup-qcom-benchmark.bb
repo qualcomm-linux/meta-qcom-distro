@@ -7,4 +7,6 @@ RDEPENDS:${PN} = "\
     coremark \
     dhrystone \
     glmark2 \
+    iperf3 \
+    netperf \
     "
