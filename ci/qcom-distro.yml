@@ -43,7 +43,6 @@ repos:
 
   meta-security:
     url: https://git.yoctoproject.org/meta-security
-    branch: master
     layers:
       .:
       meta-tpm:
