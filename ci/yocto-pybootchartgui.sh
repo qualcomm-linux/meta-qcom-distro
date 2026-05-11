@@ -22,11 +22,14 @@ _is_dir "$REPO_DIR"
 _is_dir "$WORK_DIR"
 
 # latest buildstats folder
-BUILDSTATS="$WORK_DIR/build/tmp/buildstats"
+BUILDSTATS="$(bitbake-getvar --value TMPDIR)/buildstats"
 BUILDSTATS="$BUILDSTATS/$(ls $BUILDSTATS | tail -1)"
 
+# add pybootchartgui path
+PATH="$PATH:$WORK_DIR/oe-core/scripts/pybootchartgui"
+
 # pybootchartgui tool
-CMD="$CMD $WORK_DIR/oe-core/scripts/pybootchartgui/pybootchartgui.py"
+CMD="pybootchartgui.py"
 # display time in minutes instead of seconds
 CMD="$CMD --minutes"
 # display the full time regardless of which processes are currently shown
@@ -35,7 +38,7 @@ CMD="$CMD --full-time"
 CMD="$CMD --format=svg"
 # output path (file or directory) where charts are stored
 CMD="$CMD --output=buildchart"
-# /path/to/tmp/buildstats/<recipe-machine>/<BUILDNAME>/
+# buildstats log folder
 CMD="$CMD $BUILDSTATS"
 
 exec $CMD
