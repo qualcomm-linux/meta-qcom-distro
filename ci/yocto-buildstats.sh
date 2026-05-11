@@ -43,3 +43,17 @@ CMD="$CMD $BUILDSTATS"
 
 echo $CMD
 eval $CMD
+
+# buildstats-summary tool
+CMD="buildstats-summary"
+# sort by task duration
+CMD="$CMD --sort duration"
+# disable highlight
+CMD="$CMD --highlight 0"
+# buildstats log folder
+CMD="$CMD $BUILDSTATS"
+# show and save it to
+CMD="$CMD | tee buildstats.log"
+
+echo $CMD
+eval $CMD
