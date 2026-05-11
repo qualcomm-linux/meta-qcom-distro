@@ -37,8 +37,9 @@ CMD="$CMD --full-time"
 # image format (png, svg, pdf); default format png
 CMD="$CMD --format=svg"
 # output path (file or directory) where charts are stored
-CMD="$CMD --output=buildchart"
+CMD="$CMD --output=buildstats"
 # buildstats log folder
 CMD="$CMD $BUILDSTATS"
 
-exec $CMD
+echo $CMD
+eval $CMD
