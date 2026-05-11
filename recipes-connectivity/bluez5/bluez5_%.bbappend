@@ -2,6 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
 SRC_URI:append:qcom-distro = " \
     file://0001-Use-system-bus-instead-of-session-for-obexd.patch \
+    file://0002-gatt-client-Fix-use-after-free-caused-by-reentran.patch \
 "
 
 # UTF-16/32 conversion support for OBEX Bluetooth file transfers
