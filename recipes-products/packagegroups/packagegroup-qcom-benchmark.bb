@@ -9,4 +9,5 @@ RDEPENDS:${PN} = "\
     glmark2 \
     iperf3 \
     netperf \
+    phoronix-test-suite \
     "
