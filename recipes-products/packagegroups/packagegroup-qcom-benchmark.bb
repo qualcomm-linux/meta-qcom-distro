@@ -11,5 +11,6 @@ RDEPENDS:${PN} = "\
     iperf2 \
     lmbench \
     netperf \
+    phoronix-test-suite \
     sysbench \
     "
