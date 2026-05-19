@@ -6,7 +6,10 @@ inherit packagegroup
 RDEPENDS:${PN} = "\
     coremark \
     dhrystone \
+    fio \
     glmark2 \
     iperf2 \
+    lmbench \
     netperf \
+    sysbench \
     "
