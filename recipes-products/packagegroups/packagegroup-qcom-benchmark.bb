@@ -7,5 +7,7 @@ RDEPENDS:${PN} = "\
     coremark \
     glmark2 \
     iperf2 \
+    lmbench \
     netperf \
+    sysbench \
     "
