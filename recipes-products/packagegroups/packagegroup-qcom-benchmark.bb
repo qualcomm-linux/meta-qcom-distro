@@ -6,4 +6,6 @@ inherit packagegroup
 RDEPENDS:${PN} = "\
     coremark \
     glmark2 \
+    iperf2 \
+    netperf \
     "
