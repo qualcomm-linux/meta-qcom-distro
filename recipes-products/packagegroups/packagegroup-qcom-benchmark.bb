@@ -8,6 +8,8 @@ RDEPENDS:${PN} = "\
     glmark2 \
     iperf2 \
     lmbench \
+    mbw \
+    memtester \
     netperf \
     phoronix-test-suite \
     sysbench \
