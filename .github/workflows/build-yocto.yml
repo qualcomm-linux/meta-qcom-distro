@@ -278,9 +278,14 @@ jobs:
           pattern: build-url*
 
   build_successful:
-    if: github.repository_owner == 'qualcomm-linux'
+    if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
     needs: compile
     runs-on: ubuntu-latest
     steps:
       - name: Build completed successfully
-        run: echo "All compile matrix jobs succeeded and artifacts uploaded to S3 bucket"
+        run: |
+          if [ "${{ needs.compile.result }}" != "success" ]; then
+            echo "compile result was ${{ needs.compile.result }}"
+            exit 1
+          fi
+          echo "All compile matrix jobs succeeded and artifacts uploaded to S3 bucket"
