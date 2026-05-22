@@ -60,6 +60,7 @@ RDEPENDS:${PN}-network-utils = " \
     networkmanager \
     openssh-scp \
     openssh-ssh \
+    paho-mqtt-c \
     rsync \
     smbclient \
     tcpdump \
