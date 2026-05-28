@@ -13,6 +13,7 @@ INCOMPATIBLE_LICENSE = "LICENSE.qcom LICENSE.qcom-2"
 
 # Allow closed source firmware packages
 INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
+    camxfirmware-hamoa:LICENSE.qcom-2 \
     camxfirmware-kodiak:LICENSE.qcom-2 \
     camxfirmware-lemans:LICENSE.qcom-2 \
     camxfirmware-monaco:LICENSE.qcom-2 \
