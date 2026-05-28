@@ -8,4 +8,5 @@ SRC_URI:append:qcom-distro = " \
     file://0005-libvirt_leasesh-Added-read-and-search-permission-on-.patch \
     file://0006-Add-op-tee-based-tee-supplicant-policy.patch \
     file://0007-tee_supplicant-Add-necessary-SELinux-policy-for-qtee.patch \
+    file://0008-dmesg-allow-dmesg_t-access-to-init-script-stream-soc.patch \
 "
