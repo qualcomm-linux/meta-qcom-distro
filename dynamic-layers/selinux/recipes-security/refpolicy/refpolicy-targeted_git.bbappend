@@ -6,4 +6,5 @@ SRC_URI:append:qcom-distro = " \
     file://0003-refpolicy-Allow-alsa-to-write-on-event-dev-node.patch \
     file://0004-systemd-coredump-Allow-systemd-coredump-to-read.patch \
     file://0005-libvirt_leasesh-Added-read-and-search-permission-on-.patch \
+    file://0006-Add-op-tee-based-tee-supplicant-policy.patch \
 "
