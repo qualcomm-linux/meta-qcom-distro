@@ -1,0 +1,55 @@
+From 8a5020228bdae40fdf57d5d5987a1f3f4910a540 Mon Sep 17 00:00:00 2001
+From: Sasi Kumar Maddineni <sasikuma@qti.qualcomm.com>
+Date: Thu, 28 May 2026 10:20:36 +0530
+Subject: [PATCH] dmesg: allow dmesg_t access to init script stream sockets
+
+dmesg was generating AVC denials when interacting with an init-script-owned
+UNIX stream socket for operations such as read, write, ioctl, and getattr on
+performing `adb shell dmesg`.
+
+Denials:
+type=AVC msg=audit(1773565011.851:411): avc: denied { ioctl } for pid=4782
+comm="dmesg" path="socket:[764973]" dev="sockfs" ino=764973 ioctlcmd=0x542a
+scontext=system_u:system_r:dmesg_t:s0 tcontext=system_u:system_r:initrc_t:s0
+tclass=unix_stream_socket permissive=1
+
+type=AVC msg=audit(1773565011.851:412): avc: denied { getattr } for pid=4782
+comm="dmesg" path="socket:[764973]" dev="sockfs" ino=764973
+scontext=system_u:system_r:dmesg_t:s0 tcontext=system_u:system_r:initrc_t:s0
+tclass=unix_stream_socket permissive=1
+
+type=AVC msg=audit(1773565011.851:410): avc: denied { read write } for pid=4782
+comm="dmesg" path="socket:[764973]" dev="sockfs" ino=764973
+scontext=system_u:system_r:dmesg_t:s0 tcontext=system_u:system_r:initrc_t:s0
+tclass=unix_stream_socket permissive=1
+
+type=AVC msg=audit(1773565011.851:411): avc: denied { ioctl } for pid=4782
+comm="dmesg" path="socket:[764973]" dev="sockfs" ino=764973 ioctlcmd=0x542a
+scontext=system_u:system_r:dmesg_t:s0 tcontext=system_u:system_r:initrc_t:s0
+tclass=unix_stream_socket permissive=1
+
+Grant the expected socket access for dmesg_t resolving the AVC denials.
+
+Upstream-Status: Submitted [https://github.com/SELinuxProject/refpolicy/pull/1137]
+
+Signed-off-by: Sasi Kumar Maddineni <sasikuma@qti.qualcomm.com>
+---
+ policy/modules/admin/dmesg.te | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/policy/modules/admin/dmesg.te b/policy/modules/admin/dmesg.te
+index 89478c38e..0d14dd227 100644
+--- a/policy/modules/admin/dmesg.te
++++ b/policy/modules/admin/dmesg.te
+@@ -54,6 +54,8 @@ userdom_use_user_terminals(dmesg_t)
+ 
+ mls_file_read_to_clearance(dmesg_t)
+ 
++init_rw_script_stream_sockets(dmesg_t)
++
+ optional_policy(`
+ 	seutil_sigchld_newrole(dmesg_t)
+ ')
+-- 
+2.43.0
+
