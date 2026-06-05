@@ -6,6 +6,7 @@ IMAGE_FEATURES += "weston"
 
 CORE_IMAGE_BASE_INSTALL += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'weston-xwayland xterm', '', d)} \
+    ai-edge-litert \
     alsa-utils-alsatplg \
     alsa-utils-alsaucm \
     alsa-utils-aplay \
