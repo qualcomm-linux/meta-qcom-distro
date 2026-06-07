@@ -28,6 +28,14 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     firmware-qcom-boot-qrb2210:LICENSE.qcom-2 \
     firmware-qcom-boot-qrb2210-rb1:LICENSE.qcom \
     firmware-qcom-boot-sm8750:LICENSE.qcom-2 \
+    firmware-qcom-cdt-glymur:LICENSE.qcom-2 \
+    firmware-qcom-cdt-iq-x7181:LICENSE.qcom-2 \
+    firmware-qcom-cdt-kaanapali:LICENSE.qcom-2 \
+    firmware-qcom-cdt-qcs615:LICENSE.qcom-2 \
+    firmware-qcom-cdt-qcs6490:LICENSE.qcom-2 \
+    firmware-qcom-cdt-qcs8300:LICENSE.qcom-2 \
+    firmware-qcom-cdt-qcs9100:LICENSE.qcom-2 \
+    firmware-qcom-cdt-sm8750:LICENSE.qcom-2 \
     trusted-firmware-a-qcom:LICENSE.qcom \
 "
 
