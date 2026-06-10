@@ -21,6 +21,7 @@ DISTRO_FEATURES:append = " \
     overlayfs \
     pam \
     pni-names \
+    polkit \
     security \
     tpm2 \
     virtualization \
