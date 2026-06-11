@@ -18,4 +18,5 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     fwupd \
     libgomp \
     ${@bb.utils.contains('MACHINE_FEATURES', 'phone', 'modemmanager', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'm2connector', 'packagegroup-qcom-m2-firmware', '', d)} \
 "
