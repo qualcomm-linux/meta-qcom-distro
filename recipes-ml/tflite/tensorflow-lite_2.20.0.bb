@@ -75,6 +75,7 @@ SRC_URI = " \
     file://tflite/2.20/0007-cmake-Fix-label-image-dependencies.patch \
     file://tflite/0008-cmake-Add-install-rule-for-c-interface-shared-librar.patch \
     file://tflite/0009-tflite-Add-absl-log-dependency-for-enhanced-logging-.patch \
+    file://tflite/0013-tflite-examples-label_image-build-profile_buffer.patch \
     git://github.com/google/farmhash;name=farmhash;destsuffix=tensorflow-lite-${TF_LITE_VERSION}/third_party/farmhash/;branch=master;protocol=https \
     git://github.com/google/gemmlowp.git;name=gemmlowp;destsuffix=tensorflow-lite-${TF_LITE_VERSION}/third_party/gemmlowp/;branch=master;protocol=https \
     git://github.com/pytorch/cpuinfo.git;name=cpuinfo;destsuffix=tensorflow-lite-${TF_LITE_VERSION}/third_party/cpuinfo/;branch=main;protocol=https \
