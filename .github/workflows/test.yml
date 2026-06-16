@@ -32,10 +32,6 @@ jobs:
           - name: qcom-distro
         kernel:
           - ""
-          - _linux-qcom-6.18
-        exclude:
-          - machine: qcom-armv7a
-            kernel: _linux-qcom-6.18
     steps:
       - uses: actions/checkout@v6
         with:
@@ -151,7 +147,6 @@ jobs:
           - name: qcom-distro
         kernel:
           - ""
-          - _linux-qcom-6.18
     steps:
       - id: print-condition
         name: "Print condition"
