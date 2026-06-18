@@ -77,6 +77,7 @@ SRC_URI = " \
     file://tflite/0008-cmake-Add-install-rule-for-c-interface-shared-librar.patch \
     file://tflite/0009-tflite-Add-absl-log-dependency-for-enhanced-logging-.patch \
     file://tflite/2.16/0011-tflite-profiling-add-missing-cstdint-include.patch \
+    file://tflite/0013-tflite-examples-label_image-build-profile_buffer.patch \
     git://github.com/google/farmhash;name=farmhash;destsuffix=${S}/third_party/farmhash/;branch=master;protocol=https \
     git://github.com/google/gemmlowp.git;name=gemmlowp;destsuffix=${S}/third_party/gemmlowp/;branch=master;protocol=https \
     git://github.com/pytorch/cpuinfo.git;name=cpuinfo;destsuffix=${S}/third_party/cpuinfo/;branch=main;protocol=https \

@@ -1,0 +1,46 @@
+From 158c361a47de44003ff79a3f682319eca14db252 Mon Sep 17 00:00:00 2001
+From: Ricardo Salveti <ricardo.salveti@oss.qualcomm.com>
+Date: Tue, 16 Jun 2026 15:36:16 +0000
+Subject: [PATCH] tflite: examples: label_image: build profile_buffer.cc
+
+The label_image example uses BufferedProfiler (via profiler.h /
+buffered_profiler.h), whose EndEvent()/BeginEvent() forward to
+tflite::profiling::ProfileBuffer. ProfileBuffer is declared in
+profiling/profile_buffer.h and defined in profiling/profile_buffer.cc,
+which is deliberately excluded from libtensorflow-lite.a
+(TFLITE_PROFILER_SRCS in tensorflow/lite/CMakeLists.txt). Every tool
+that pulls in the profiler must therefore compile profile_buffer.cc
+itself - tools/benchmark/CMakeLists.txt already does, but the
+label_image example does not.
+
+This is a latent bug: older compilers inlined/eliminated the
+out-of-line reference to ProfileBuffer::EndEvent(), but GCC 16 keeps it,
+so linking label_image fails with:
+
+  undefined reference to
+  'tflite::profiling::ProfileBuffer::EndEvent(unsigned int,
+   long const*, long const*)'
+
+Add profiling/profile_buffer.cc to TFLITE_LABEL_IMAGE_SRCS, mirroring
+the benchmark_model target. Its other dependencies (time.cc,
+memory_info.cc and minimal logging) are already linked, so no further
+sources are needed.
+
+Upstream-Status: Submitted [https://github.com/tensorflow/tensorflow/pull/121367]
+
+Signed-off-by: Ricardo Salveti <ricardo.salveti@oss.qualcomm.com>
+---
+ tensorflow/lite/examples/label_image/CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tensorflow/lite/examples/label_image/CMakeLists.txt b/tensorflow/lite/examples/label_image/CMakeLists.txt
+index ae4ab447064..cb9e0cbb310 100644
+--- a/tensorflow/lite/examples/label_image/CMakeLists.txt
++++ b/tensorflow/lite/examples/label_image/CMakeLists.txt
+@@ -25,2 +25,3 @@ list(APPEND TFLITE_LABEL_IMAGE_SRCS
+   ${TFLITE_SOURCE_DIR}/profiling/memory_info.cc
++  ${TFLITE_SOURCE_DIR}/profiling/profile_buffer.cc
+   ${TFLITE_SOURCE_DIR}/profiling/profile_summarizer.cc
+-- 
+2.43.0
+
