@@ -1,0 +1,82 @@
+From 41a1660f8bc0e3d18d9cb169f7a4fd6cde67aff2 Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Fri, 19 Jun 2026 13:43:44 +0300
+Subject: [PATCH 4/4] docker: Add tunable-gated optional policy for dockerd
+ access to user session services
+
+Introduce a new tunable to control whether the Docker daemon (dockerd_t)
+may connect to user session services over UNIX stream sockets.
+
+This change adds the following interfaces:
+
+    pulseaudio_stream_connect(dockerd_t)
+    wayland_stream_connect(dockerd_t)
+
+These permissions allow dockerd to communicate with PulseAudio and Wayland
+compositor sockets typically located under /run/user/$UID, which is required
+for certain container workloads that need access to host audio or graphical
+display services.
+
+The access is gated behind a new tunable:
+
+    dockerd_connect_user_services (default: off)
+
+When enabled, the rules are applied via tunable_policy(), providing
+administrators explicit control using setsebool.
+
+Both interfaces remain wrapped in optional_policy blocks to ensure the
+policy compiles and applies cleanly only when the corresponding PulseAudio
+and Wayland policy modules are present.
+
+This approach improves compatibility with containerized desktop workloads
+while maintaining secure-by-default behavior and modular SELinux policy design.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/pull/1167]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/services/docker.te | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/policy/modules/services/docker.te b/policy/modules/services/docker.te
+index f40713d12..a90763c8e 100644
+--- a/policy/modules/services/docker.te
++++ b/policy/modules/services/docker.te
+@@ -5,6 +5,15 @@ policy_module(docker)
+ # Declarations
+ #
+ 
++## <desc>
++##	<p>
++##	Determine whether the Docker daemon can connect to user
++##	session services such as PulseAudio and Wayland over
++##	UNIX stream sockets.
++##	</p>
++## </desc>
++gen_tunable(dockerd_connect_user_services, false)
++
+ container_engine_domain_template(dockerd)
+ container_system_engine(dockerd_t)
+ optional_policy(`
+@@ -61,6 +70,18 @@ container_stream_connect_system_containers(dockerd_t)
+ # docker manages key.json in /etc/docker
+ container_manage_config_files(dockerd_t)
+ 
++optional_policy(`
++	tunable_policy(`dockerd_connect_user_services',`
++		pulseaudio_stream_connect(dockerd_t)
++	')
++')
++
++optional_policy(`
++	tunable_policy(`dockerd_connect_user_services',`
++		wayland_stream_connect(dockerd_t)
++	')
++')
++
+ # In btrfs mode, docker creates subvolumes which are unlabeled
+ # in /var/lib/docker/btrfs/subvolumes. The files inside will
+ # become labeled with a file transition, but the subvolume
+-- 
+2.43.0
+
