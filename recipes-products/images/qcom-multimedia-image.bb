@@ -2,7 +2,8 @@ require qcom-console-image.bb
 
 SUMMARY = "Basic Wayland image with Weston"
 
-IMAGE_FEATURES += "weston"
+IMAGE_FEATURES += "weston splash"
+SPLASH = "psplash"
 
 CORE_IMAGE_BASE_INSTALL += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'weston-xwayland xterm', '', d)} \
