@@ -19,6 +19,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     kgsl-dlkm \
     libdiag-bin \
     qcom-adreno \
+    qcom-rtss-can \
     qcom-sensors-binaries \
     qwes \
 "
