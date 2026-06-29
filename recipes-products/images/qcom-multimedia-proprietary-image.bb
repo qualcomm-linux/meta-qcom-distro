@@ -17,6 +17,10 @@ CORE_IMAGE_BASE_INSTALL += " \
     gst-plugins-imsdk-prop \
     iris-video-dlkm \
     kgsl-dlkm \
+    qcom-rtss-mailbox-kmd \
+    qcom-rtss-mailbox-umd \
+    qcom-rtss-ota \
+    qcom-rtss-mailbox-umd-utils \
     libdiag-bin \
     qcom-adreno \
     qcom-sensors-binaries \
