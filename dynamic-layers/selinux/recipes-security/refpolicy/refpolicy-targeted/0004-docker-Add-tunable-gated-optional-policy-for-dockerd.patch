@@ -1,0 +1,81 @@
+From fa9fde3e037f395cd2ecc10cc86aa5f413c4528c Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Fri, 19 Jun 2026 13:43:44 +0300
+Subject: [PATCH 4/4] docker: Add tunable-gated optional policy for dockerd
+ access to user session services
+
+Introduce a new tunable to control whether the Docker daemon (dockerd_t)
+may connect to user session services over UNIX stream sockets.
+
+This change adds the following interfaces:
+
+    pulseaudio_stream_connect(dockerd_t)
+    wayland_stream_connect(dockerd_t)
+
+These permissions allow dockerd to communicate with PulseAudio and Wayland compositor
+sockets typically located under /run/user/$UID, which is required for certain container
+workloads that need access to the host audio or graphical display.
+
+The access is gated behind a new tunable:
+
+    dockerd_connect_user_services (default: off)
+
+When enabled, the rules are applied via tunable_policy(), providing
+administrators explicit control using setsebool.
+
+Both interfaces remain wrapped in optional_policy blocks to ensure the
+policy compiles and applies cleanly only when the corresponding PulseAudio
+and Wayland policy modules are present.
+
+This approach improves compatibility with containerized desktop workloads
+while maintaining secure-by-default behavior and modular SELinux policy design.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/pull/1167]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/services/docker.te | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/policy/modules/services/docker.te b/policy/modules/services/docker.te
+index f40713d12..cf45fc188 100644
+--- a/policy/modules/services/docker.te
++++ b/policy/modules/services/docker.te
+@@ -5,6 +5,15 @@ policy_module(docker)
+ # Declarations
+ #
+ 
++## <desc>
++##	<p>
++##	Determine whether the Docker daemon can connect to user
++##	session services such as PulseAudio and Wayland over
++##	UNIX stream sockets.
++##	</p>
++## </desc>
++gen_tunable(dockerd_connect_user_services, false)
++
+ container_engine_domain_template(dockerd)
+ container_system_engine(dockerd_t)
+ optional_policy(`
+@@ -77,6 +86,18 @@ ifdef(`init_systemd',`
+ 	init_stop_generic_units(dockerd_t)
+ ')
+ 
++optional_policy(`
++	tunable_policy(`dockerd_connect_user_services',`
++		pulseaudio_stream_connect(dockerd_t)
++	')
++')
++
++optional_policy(`
++	tunable_policy(`dockerd_connect_user_services',`
++		wayland_stream_connect(dockerd_t)
++	')
++')
++
+ ########################################
+ #
+ # Docker CLI local policy
+-- 
+2.43.0
+
