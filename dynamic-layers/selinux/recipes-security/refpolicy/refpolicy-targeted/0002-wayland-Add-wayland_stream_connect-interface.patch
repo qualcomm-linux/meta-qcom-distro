@@ -1,0 +1,55 @@
+From 86ee8eb9fb4226ba11e02254b12278c9de446f8a Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Fri, 19 Jun 2026 13:30:02 +0300
+Subject: [PATCH 2/3] wayland: Add wayland_stream_connect interface
+
+Add a new interface, wayland_stream_connect(), to allow domains to
+connect to a Wayland compositor via a UNIX stream socket.
+
+This interface grants the necessary permissions to search the user
+runtime directory and establish a stream connection to Wayland
+compositor sockets labeled with wayland_runtime_t.
+
+Typical usage includes enabling confined domains (such as container
+runtimes or applications) to communicate with the Wayland display server.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/pull/1166]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/session/wayland.if | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/policy/modules/session/wayland.if b/policy/modules/session/wayland.if
+index 2812dcb30..bc4185c2a 100644
+--- a/policy/modules/session/wayland.if
++++ b/policy/modules/session/wayland.if
+@@ -99,3 +99,25 @@ interface(`wayland_client_sandboxed_domain',`
+ 
+ 	typeattribute $1 wayland_client_sandboxed;
+ ')
++
++#########################################
++## <summary>
++##	Connect to the Wayland compositor
++##	using a UNIX domain stream socket.
++## </summary>
++## <param name="domain">
++##	<summary>
++##	Domain allowed access.
++##	</summary>
++## </param>
++#
++interface(`wayland_stream_connect',`
++	gen_require(`
++		type wayland_runtime_t;
++	')
++
++	files_search_runtime($1)
++	userdom_search_user_runtime($1)
++	allow $1 wayland_runtime_t:sock_file write_sock_file_perms;
++	allow $1 wayland_runtime_t:unix_stream_socket connectto;
++')
+-- 
+2.43.0
+
