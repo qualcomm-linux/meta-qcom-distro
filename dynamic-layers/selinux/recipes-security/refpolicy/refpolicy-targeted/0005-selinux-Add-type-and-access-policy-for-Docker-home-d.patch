@@ -1,0 +1,93 @@
+From c2c904f7a3802ac76e7546092fd9c383be5b1082 Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Mon, 29 Jun 2026 09:13:22 +0300
+Subject: [PATCH 5/5] selinux: Add type and access policy for Docker home
+ directories
+
+Define docker_home_t and label specific home subdirectories
+(media, models, labels, configs) for Docker use.
+Introduce docker_home_access interface to allow controlled
+access to these directories.
+
+Upstream-Status: Inappropriate [Qualcomm specific change]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/services/docker.te      |  4 ++++
+ policy/modules/services/docker_home.fc |  4 ++++
+ policy/modules/services/docker_home.if | 19 +++++++++++++++++++
+ policy/modules/services/docker_home.te | 10 ++++++++++
+ 4 files changed, 37 insertions(+)
+ create mode 100644 policy/modules/services/docker_home.fc
+ create mode 100644 policy/modules/services/docker_home.if
+ create mode 100644 policy/modules/services/docker_home.te
+
+diff --git a/policy/modules/services/docker.te b/policy/modules/services/docker.te
+index cf45fc188..271c96800 100644
+--- a/policy/modules/services/docker.te
++++ b/policy/modules/services/docker.te
+@@ -98,6 +98,10 @@ optional_policy(`
+ 	')
+ ')
+ 
++optional_policy(`
++	docker_home_access(dockerd_t)
++')
++
+ ########################################
+ #
+ # Docker CLI local policy
+diff --git a/policy/modules/services/docker_home.fc b/policy/modules/services/docker_home.fc
+new file mode 100644
+index 000000000..e55305fbc
+--- /dev/null
++++ b/policy/modules/services/docker_home.fc
+@@ -0,0 +1,4 @@
++HOME_DIR/media(/.*)?	gen_context(system_u:object_r:docker_home_t,s0)
++HOME_DIR/models(/.*)?	gen_context(system_u:object_r:docker_home_t,s0)
++HOME_DIR/labels(/.*)?	gen_context(system_u:object_r:docker_home_t,s0)
++HOME_DIR/configs(/.*)?	gen_context(system_u:object_r:docker_home_t,s0)
+diff --git a/policy/modules/services/docker_home.if b/policy/modules/services/docker_home.if
+new file mode 100644
+index 000000000..7c25944d4
+--- /dev/null
++++ b/policy/modules/services/docker_home.if
+@@ -0,0 +1,19 @@
++## <summary>Policy for Docker home access.</summary>
++
++#####################################
++## <summary>
++##	Access Docker home directories.
++## </summary>
++## <param name="domain">
++##	<summary>
++##	Domain allowed access.
++##	</summary>
++## </param>
++#
++interface(`docker_home_access',`
++	gen_require(`
++		type docker_home_t;
++	')
++
++	allow $1 docker_home_t:dir { getattr ioctl };
++')
+diff --git a/policy/modules/services/docker_home.te b/policy/modules/services/docker_home.te
+new file mode 100644
+index 000000000..db7aa3a0f
+--- /dev/null
++++ b/policy/modules/services/docker_home.te
+@@ -0,0 +1,10 @@
++policy_module(docker_home)
++
++########################################
++#
++# Declarations
++#
++
++type docker_home_t;
++
++files_type(docker_home_t)
+-- 
+2.43.0
+
