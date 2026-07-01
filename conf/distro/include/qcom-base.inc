@@ -1,9 +1,10 @@
 DISTRO_NAME = "Qualcomm Linux Reference Distro"
 
-DISTRO_VERSION = "2.0"
+DISTRO_VERSION = "2.99+snapshot-${METADATA_REVISION}"
 
 # SDK variables.
-SDK_VERSION = "${DISTRO_VERSION}"
+SDK_VERSION = "${@d.getVar('DISTRO_VERSION').replace('snapshot-${METADATA_REVISION}', 'snapshot')}"
+SDK_VERSION[vardepvalue] = "${SDK_VERSION}"
 SDK_NAME = "${DISTRO}-${SDKMACHINE}-${IMAGE_BASENAME}-${TUNE_PKGARCH}-${MACHINE}"
 SDK_VENDOR = "-qcomsdk"
 
