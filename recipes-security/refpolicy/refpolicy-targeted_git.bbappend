@@ -5,3 +5,5 @@ SRC_URI:append:qcom-distro = " \
     file://0003-wayland-Label-sockets-under-run-with-wayland_runtime.patch \
     file://0004-docker-Add-tunable-gated-optional-policy-for-dockerd.patch \
 "
+
+POLICY_CUSTOM_BUILDOPT:append:qcom-distro = " pipewire_system_service"
