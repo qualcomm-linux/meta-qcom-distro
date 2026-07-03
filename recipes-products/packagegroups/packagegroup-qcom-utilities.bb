@@ -74,6 +74,8 @@ RDEPENDS:${PN}-profile-utils = " \
     sysbench \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-analyze', '', d)} \
     tiobench \
+    boot-time-analysis-tools \
+    cntvct-log \
     "
 
 RDEPENDS:${PN}-support-utils = " \
