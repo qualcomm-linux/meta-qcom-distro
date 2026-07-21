@@ -1,0 +1,31 @@
+From d4a85ae3abdbac8065b6389a103723755866af2c Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Mon, 22 Jun 2026 15:49:44 +0300
+Subject: [PATCH 3/3] wayland: Label sockets under /run with wayland_runtime_t
+
+On some embedded or single-user systems the Wayland socket
+(e.g. wayland-0) is created directly under /run instead of
+/run/user/<uid>/. The existing policy only covers per-user runtime
+directories, leaving these sockets unlabeled.
+
+Add a file context rule for /run/wayland-* to ensure such sockets are
+correctly labeled with wayland_runtime_t, aligning behavior across
+different system configurations.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/pull/1166]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/session/wayland.fc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/policy/modules/session/wayland.fc b/policy/modules/session/wayland.fc
+index 73151efba..bd2ccc08e 100644
+--- a/policy/modules/session/wayland.fc
++++ b/policy/modules/session/wayland.fc
+@@ -1 +1,2 @@
+ /run/user/%{USERID}/wayland-.*	-s	gen_context(system_u:object_r:wayland_runtime_t,s0)
++/run/wayland-.*		-s	gen_context(system_u:object_r:wayland_runtime_t,s0)
+-- 
+2.43.0
+
