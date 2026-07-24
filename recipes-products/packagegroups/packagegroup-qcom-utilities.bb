@@ -56,6 +56,7 @@ RDEPENDS:${PN}-network-utils = " \
     hostapd \
     iperf2 \
     iproute2 \
+    iproute2-tc \
     iw \
     networkmanager \
     openssh-scp \
