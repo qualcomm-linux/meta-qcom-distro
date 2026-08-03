@@ -1,0 +1,56 @@
+From 0ff4d905617ef8bb7b70084d66d19e290e2158b4 Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Fri, 31 Jul 2026 14:49:39 +0300
+Subject: [PATCH 6/6] docker: Add tunable for mounting on XDG Downloads
+ directories
+
+Add the dockerd_mounton_xdg_downloads tunable to optionally
+allow the Docker daemon to mount filesystems on user XDG Downloads
+directories.
+
+When enabled, the tunable grants dockerd_t the mounton permission on
+xdg_downloads_t through the xdg_mounton_downloads() interface.
+The tunable is disabled by default.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/pull/1191]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/services/docker.te | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/policy/modules/services/docker.te b/policy/modules/services/docker.te
+index cf45fc188..eb408a30f 100644
+--- a/policy/modules/services/docker.te
++++ b/policy/modules/services/docker.te
+@@ -14,6 +14,14 @@ policy_module(docker)
+ ## </desc>
+ gen_tunable(dockerd_connect_user_services, false)
+ 
++## <desc>
++##	<p>
++##	Determine whether the Docker daemon can mount filesystems
++##	on user XDG Downloads directories.
++##	</p>
++## </desc>
++gen_tunable(dockerd_mounton_xdg_downloads, false)
++
+ container_engine_domain_template(dockerd)
+ container_system_engine(dockerd_t)
+ optional_policy(`
+@@ -98,6 +106,12 @@ optional_policy(`
+ 	')
+ ')
+ 
++optional_policy(`
++	tunable_policy(`dockerd_mounton_xdg_downloads',`
++		xdg_mounton_downloads(dockerd_t)
++	')
++')
++
+ ########################################
+ #
+ # Docker CLI local policy
+-- 
+2.43.0
+
