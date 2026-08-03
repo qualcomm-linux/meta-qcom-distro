@@ -1,0 +1,53 @@
+From 783395acf331bca7328eb296bd957538400c5690 Mon Sep 17 00:00:00 2001
+From: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+Date: Fri, 31 Jul 2026 14:47:46 +0300
+Subject: [PATCH 5/6] xdg: Add interface for mounting on Downloads directories
+
+Add the xdg_mounton_downloads() interface to allow a domain to use
+the mounton permission on xdg_downloads_t directories.
+
+This interface grants mounton access to XDG Downloads directories and
+allows searching user home directories, enabling policy modules to
+optionally permit mounting filesystems on a user's Downloads directory.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/pull/1191]
+
+Signed-off-by: Kemal Rasim Sh <kshakir@qti.qualcomm.com>
+---
+ policy/modules/system/xdg.if | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/policy/modules/system/xdg.if b/policy/modules/system/xdg.if
+index 92f2eedf2..64eee78d2 100644
+--- a/policy/modules/system/xdg.if
++++ b/policy/modules/system/xdg.if
+@@ -1206,6 +1206,26 @@ interface(`xdg_relabel_downloads',`
+ 	userdom_search_user_home_dirs($1)
+ ')
+ 
++########################################
++## <summary>
++##	Allow mounting on the xdg downloads directory.
++## </summary>
++## <param name="domain">
++##	<summary>
++##	Domain allowed access.
++##	</summary>
++## </param>
++#
++interface(`xdg_mounton_downloads',`
++	gen_require(`
++		type xdg_downloads_t;
++	')
++
++	allow $1 xdg_downloads_t:dir { search_dir_perms mounton_dir_perms };
++
++	userdom_search_user_home_dirs($1)
++')
++
+ ########################################
+ ## <summary>
+ ##	Watch the xdg pictures home directories
+-- 
+2.43.0
+
