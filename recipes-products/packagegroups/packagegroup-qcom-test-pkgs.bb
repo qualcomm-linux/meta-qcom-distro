@@ -21,6 +21,7 @@ RDEPENDS:${PN} = "\
     pulseaudio-misc \
     rng-tools \
     sigma-dut \
+    sox \
     util-linux \
     v4l-utils \
     yavta \
