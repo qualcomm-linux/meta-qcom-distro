@@ -5,8 +5,6 @@ LICENSE = "MIT"
 DESCRIPTION = "An XFCE demo image for Qualcomm machines"
 SUMMARY = "An XFCE demo image."
 
-export IMAGE_BASENAME = "Qualcomm-XFCE-demo-image"
-
 IMAGE_FEATURES += "x11"
 REQUIRED_DISTRO_FEATURES += "x11 opengl"
 
