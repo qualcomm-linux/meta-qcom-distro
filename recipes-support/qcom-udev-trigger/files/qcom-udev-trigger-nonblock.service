@@ -1,0 +1,15 @@
+[Unit]
+Description=Deferred udev coldplug for non-block devices
+Documentation=man:udevadm(8)
+DefaultDependencies=no
+After=basic.target
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+ExecStart=-udevadm trigger --type=all --action=add --subsystem-nomatch=block
+
+[Install]
+WantedBy=multi-user.target
