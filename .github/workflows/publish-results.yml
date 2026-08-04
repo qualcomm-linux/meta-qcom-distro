@@ -46,7 +46,7 @@ jobs:
         run: |
           echo $GITHUB_WORKSPACE
           ls -R $GITHUB_WORKSPACE
-          if ! find "${{ github.workspace }}/artifacts/" -name '*.xml' -print -quit | grep -q .; then
+          if ! find "${GITHUB_WORKSPACE}/artifacts/" -name '*.xml' -print -quit | grep -q .; then
             echo "Error: no .xml files found"
             exit 1
           fi
