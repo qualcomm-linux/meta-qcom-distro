@@ -31,7 +31,6 @@ CORE_IMAGE_BASE_INSTALL += " \
     pipewire-tools \
     pulseaudio-pactl \
     tensorflow-lite-tools \
-    thermald \
     userspace-resource-manager \
     userspace-resource-manager-extensions \
     weston \
@@ -40,8 +39,12 @@ CORE_IMAGE_BASE_INSTALL += " \
     wireplumber \
 "
 
-# IMSDK currently only used and tested on ARMv8 (aarch64) machines.
-CORE_IMAGE_BASE_INSTALL:append:aarch64 = " gst-plugins-imsdk-oss gst-plugins-imsdk-python"
+# Used and tested on ARMv8 (aarch64) machines.
+CORE_IMAGE_BASE_INSTALL:append:aarch64 = " \
+    gst-plugins-imsdk-oss \
+    gst-plugins-imsdk-python \
+    thermald \
+"
 
 # let's make sure we have a good image.
 REQUIRED_DISTRO_FEATURES += "wayland"
