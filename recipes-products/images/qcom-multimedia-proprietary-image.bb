@@ -18,6 +18,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     iris-video-dlkm \
     kgsl-dlkm \
     libdiag-bin \
+    onnxruntime-qnn \
     qcom-adreno \
     qcom-sensors-binaries \
     qwes \
