@@ -41,7 +41,7 @@ CORE_IMAGE_BASE_INSTALL += " \
 "
 
 # IMSDK currently only used and tested on ARMv8 (aarch64) machines.
-CORE_IMAGE_BASE_INSTALL:append:aarch64 = " gst-plugins-imsdk-oss gst-plugins-imsdk-python"
+CORE_IMAGE_BASE_INSTALL:append:aarch64 = " gst-plugins-imsdk-oss gst-plugins-imsdk-python imsdk-app-builder-cpp imsdk-app-builder-python"
 
 # let's make sure we have a good image.
 REQUIRED_DISTRO_FEATURES += "wayland"
