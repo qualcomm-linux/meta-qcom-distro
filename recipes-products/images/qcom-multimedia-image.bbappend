@@ -30,6 +30,7 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     firmware-qcom-boot-shikra:LICENSE.qcom-2 \
     firmware-qcom-boot-sm8750:LICENSE.qcom-2 \
     trusted-firmware-a-qcom:LICENSE.qcom \
+    trusted-firmware-a-qcom-rb3gen2:LICENSE.qcom \
 "
 
 # QA check considers packages in INCOMPATIBLE_LICENSE_EXCEPTIONS list still to
