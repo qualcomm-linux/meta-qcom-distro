@@ -5,5 +5,6 @@ inherit packagegroup
 
 RDEPENDS:${PN} = "\
     quickboot-audio \
+    quickboot-camera \
     quickboot-display \
     "
