@@ -19,6 +19,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     kgsl-dlkm \
     libdiag-bin \
     onnxruntime-qnn \
+    packagegroup-qcom-quickboot \
     qcom-adreno \
     qcom-sensors-binaries \
     qwes \
