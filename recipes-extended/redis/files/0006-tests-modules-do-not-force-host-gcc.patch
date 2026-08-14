@@ -1,0 +1,44 @@
+From d854ee577bd9eb3b3f3752999aad865fa8611984 Mon Sep 17 00:00:00 2001
+From: Viswanath Kraleti <viswanath.kraleti@oss.qualcomm.com>
+Date: Fri, 14 Aug 2026 00:00:00 +0000
+Subject: [PATCH] tests/modules: use the OE toolchain instead of host gcc
+
+Since 8.8.0 the src/Makefile "all" target also builds "module_tests",
+which descends into tests/modules/. That Makefile unconditionally sets
+"CC = gcc" and "LD = gcc" on Linux, overriding the CC/LD provided via
+the environment. Under cross-compilation this invokes the host gcc with
+the target CFLAGS (e.g. -fcanon-prefix-map from the OE cross toolchain),
+which the host compiler does not understand:
+
+    gcc: error: unrecognized command-line option '-fcanon-prefix-map'
+
+Drop the hardcoded "CC = gcc" so the compiler exported by the
+environment (aarch64-...-gcc) is used. The shared objects are linked
+via $(LD), and upstream deliberately links through the compiler driver
+(LD = gcc) so that gcc driver flags in LDFLAGS such as -Wl,-O1 are
+honoured; the OE-exported LD is the raw binutils ld and rejects them.
+Set "LD = $(CC)" so the link also goes through the cross compiler
+driver. The SANITIZER=memory clang requirement handled by the separate
+block above is unaffected.
+
+Upstream-Status: Pending
+
+Signed-off-by: Viswanath Kraleti <viswanath.kraleti@oss.qualcomm.com>
+---
+ tests/modules/Makefile | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/tests/modules/Makefile b/tests/modules/Makefile
+index 0659497..8628aba 100644
+--- a/tests/modules/Makefile
++++ b/tests/modules/Makefile
+@@ -29,8 +29,7 @@ endif
+ # tough we want to keep the compiler as clang as MSan is not supported for gcc
+ ifeq ($(uname_S),Linux)
+ ifneq ($(SANITIZER),memory)
+-	LD = gcc
+-	CC = gcc
++	LD = $(CC)
+ endif
+ endif
+ 
