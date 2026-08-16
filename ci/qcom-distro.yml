@@ -14,6 +14,10 @@ repos:
 
   meta-openembedded:
     url: https://github.com/openembedded/meta-openembedded
+    patches:
+      redis-xxhash-og:
+        repo: meta-qcom-distro
+        path: patches/meta-oe/0001-redis-fix-build-of-the-bundled-xxHash-with-Og.patch
     layers:
       meta-filesystems:
       meta-gnome:
