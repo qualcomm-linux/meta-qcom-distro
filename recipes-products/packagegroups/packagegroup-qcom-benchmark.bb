@@ -5,6 +5,7 @@ inherit packagegroup
 
 RDEPENDS:${PN} = "\
     coremark \
+    coremark-pro \
     dhrystone \
     fio \
     glmark2 \
@@ -13,6 +14,13 @@ RDEPENDS:${PN} = "\
     mbw \
     memtester \
     netperf \
+    osbench \
     phoronix-test-suite \
+    ramspeed \
+    ramspeed-smp \
+    sockperf \
     sysbench \
+    unixbench \
+    wrk \
+    wrk2 \
     "
