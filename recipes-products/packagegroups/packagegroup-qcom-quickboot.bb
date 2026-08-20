@@ -8,4 +8,5 @@ RDEPENDS:${PN} = "\
     qcom-camera-preview \
     quickboot-audio \
     quickboot-camera \
+    quickboot-display \
     "
