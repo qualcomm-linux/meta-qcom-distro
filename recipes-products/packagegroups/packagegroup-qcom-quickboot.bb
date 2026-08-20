@@ -6,4 +6,5 @@ inherit packagegroup
 RDEPENDS:${PN} = "\
     qcom-audio-chime \
     quickboot-audio \
+    quickboot-camera \
     "
