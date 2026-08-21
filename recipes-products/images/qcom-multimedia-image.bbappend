@@ -31,6 +31,57 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     firmware-qcom-boot-sm8750:LICENSE.qcom-2 \
     trusted-firmware-a-qcom:LICENSE.qcom \
     trusted-firmware-a-qcom-rb3gen2:LICENSE.qcom \
+    hexagon-dsp-binaries-config-schema \
+    hexagon-dsp-binaries-arduino-monza-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-arduino-monza-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-arduino-monza-gdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-db820c-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-qcom-glymur-crd-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-glymur-crd-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-hamoa-iot-evk-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-hamoa-iot-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-iq8275-evk-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-iq8275-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-iq8275-evk-gdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-iq9075-evk-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-iq9075-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-iq9075-evk-gdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-kaanapali-mtp-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-kaanapali-mtp-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-purwa-iot-evk-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-purwa-iot-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-qcm6490-idp-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-qcom-qcm6490-idp-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-qcom-qcs615-ride-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-qcs615-ride-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-qcs8300-ride-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-qcs8300-ride-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-qcs8300-ride-gdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-sa8775p-ride-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-sa8775p-ride-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-sa8775p-ride-gdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-sdm845-hdk-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-qcom-sdm845-hdk-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-qcom-shikra-cqm-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-shikra-cqs-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-shikra-iqs-evk-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-sm8750-mtp-adsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-qcom-sm8750-mtp-cdsp:LICENSE.qcom-2 \
+    hexagon-dsp-binaries-radxa-dragon-q6a-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-radxa-dragon-q6a-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-db845c-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-db845c-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-db845c-sdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb1-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb2-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb2-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb3gen2-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb3gen2-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb5-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb5-cdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rb5-sdsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rubikpi3-adsp:LICENSE.qcom \
+    hexagon-dsp-binaries-thundercomm-rubikpi3-cdsp:LICENSE.qcom \
 "
 
 # QA check considers packages in INCOMPATIBLE_LICENSE_EXCEPTIONS list still to
