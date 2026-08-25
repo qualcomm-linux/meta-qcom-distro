@@ -17,7 +17,7 @@ repos:
     patches:
       redis-install-prefix:
         repo: meta-qcom-distro
-        path: patches/meta-oe/0002-redis-fix-the-install-prefix-with-8.10.0.patch
+        path: patches/meta-oe/0001-redis-fix-the-install-prefix-with-8.10.0.patch
     layers:
       meta-filesystems:
       meta-gnome:
