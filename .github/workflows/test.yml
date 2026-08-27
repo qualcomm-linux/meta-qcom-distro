@@ -18,6 +18,10 @@ on:
       summary_ids:
         description: "IDs of the test summary artifact"
         value: ${{ jobs.collect-ids.outputs.summary_ids }}
+    secrets:
+      LAVATOKEN:
+        required: true
+        description: "Token used to submit jobs to the LAVA lab"
 env:
   # git sha, tag or branch in lava-test-plans repository
   LAVA_TEST_PLANS_REF: "a20c74e6827b87ca39dff33eff4769d860e7942c"
@@ -40,7 +44,8 @@ jobs:
     needs: [prepare-env]
     name: "Test qcom-distro"
     uses: ./.github/workflows/test-distro.yml
-    secrets: inherit
+    secrets:
+      LAVATOKEN: ${{ secrets.LAVATOKEN }}
     with:
       build_id: "${{ inputs.build_id }}"
       devices: "iq-8275-evk,iq-9075-evk,iq-x7181-evk,qcm6490-idp,qcs615-ride,rb3gen2-core-kit,qcs8300-ride-sx,qcs9100-ride-sx,qcom-armv8a,qcom-armv7a,rb1-core-kit"
@@ -55,7 +60,8 @@ jobs:
     needs: [prepare-env]
     name: "Test qcom-distro_linux-qcom-6.18"
     uses: ./.github/workflows/test-distro.yml
-    secrets: inherit
+    secrets:
+      LAVATOKEN: ${{ secrets.LAVATOKEN }}
     with:
       build_id: "${{ inputs.build_id }}"
       devices: "iq-8275-evk,iq-9075-evk,iq-x7181-evk,qcm6490-idp,qcs615-ride,rb3gen2-core-kit,qcs8300-ride-sx,qcs9100-ride-sx,qcom-armv8a,rb1-core-kit"
