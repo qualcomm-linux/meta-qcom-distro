@@ -9,3 +9,6 @@ DISTRO_FEATURES_OPTED_OUT += "ptest"
 
 # Generate an OSTree repository tarball during image build
 BUILD_OSTREE_REPO_TARBALL = "1"
+
+# sota flashes ota-ext4, so the ext4 from the machine config is never read
+IMAGE_FSTYPES:remove = "ext4"
