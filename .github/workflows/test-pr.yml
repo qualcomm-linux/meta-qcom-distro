@@ -32,7 +32,7 @@ jobs:
         id: download-result-summary
         uses: actions/download-artifact@v7
         with:
-          artifact-ids: ${{ needs.test.outputs.summary_id }}
+          artifact-ids: ${{ needs.test.outputs.summary_ids }}
           path: results_summary
 
       - name: Download event file
@@ -53,8 +53,13 @@ jobs:
           echo "## Test run [workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" > pr-comment.txt
           echo "## Test jobs for commit ${GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA}" >> pr-comment.txt
           PR_NUMBER=$(cat "artifacts/Event File/event.json" | jq -r ".number")
-          RESULT_FILE_NAME=$(find ./results_summary/ -type f)
-          cat "${RESULT_FILE_NAME}" >> pr-comment.txt
+          for RESULT_FILE_NAME in $(find ./results_summary/ -type f)
+          do
+              # <summary> lines cover both number of tests
+              # and the table with the list of all jobs
+              # omit the list of all jobs from shortened summary
+              cat "${RESULT_FILE_NAME}" | grep "summary" | grep -v "All jobs summary" >> pr-comment.txt
+          done
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
         env:
           GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
