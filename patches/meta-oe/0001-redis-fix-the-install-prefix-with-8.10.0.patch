@@ -1,4 +1,4 @@
-From cc7712f1158c6897a91c895db27a1c432cb84818 Mon Sep 17 00:00:00 2001
+From 86033d1d370f630f0515ba8765a21bbb5673aa1a Mon Sep 17 00:00:00 2001
 From: Ricardo Salveti <ricardo.salveti@oss.qualcomm.com>
 Date: Fri, 21 Aug 2026 15:34:03 +0000
 Subject: [PATCH] redis: fix the install prefix with 8.10.0
@@ -24,14 +24,14 @@ AI-Generated: Uses Claude Code
 Signed-off-by: Ricardo Salveti <ricardo.salveti@oss.qualcomm.com>
 Upstream-Status: Submitted [https://lists.openembedded.org/g/openembedded-devel/message/129474]
 ---
- meta-oe/recipes-extended/redis/redis_8.10.0.bb | 3 +--
+ meta-oe/recipes-extended/redis/redis_8.10.1.bb | 3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/meta-oe/recipes-extended/redis/redis_8.10.0.bb b/meta-oe/recipes-extended/redis/redis_8.10.0.bb
-index 6176dc45be..13d6aa1066 100644
---- a/meta-oe/recipes-extended/redis/redis_8.10.0.bb
-+++ b/meta-oe/recipes-extended/redis/redis_8.10.0.bb
-@@ -56,8 +56,7 @@ do_compile() {
+diff --git a/meta-oe/recipes-extended/redis/redis_8.10.1.bb b/meta-oe/recipes-extended/redis/redis_8.10.1.bb
+index 7c017e957..d0220d228 100644
+--- a/meta-oe/recipes-extended/redis/redis_8.10.1.bb
++++ b/meta-oe/recipes-extended/redis/redis_8.10.1.bb
+@@ -65,8 +65,7 @@ do_compile() {
  }
  
  do_install() {
@@ -41,3 +41,6 @@ index 6176dc45be..13d6aa1066 100644
      install -d ${D}/${sysconfdir}/redis
      install -m 0644 ${UNPACKDIR}/redis.conf ${D}/${sysconfdir}/redis/redis.conf
      install -d ${D}/${sysconfdir}/init.d
+-- 
+2.43.0
+
