@@ -43,6 +43,11 @@ jobs:
   test-qcom-distro:
     needs: [prepare-env]
     name: "Test qcom-distro"
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/test-distro.yml
     secrets:
       LAVATOKEN: ${{ secrets.LAVATOKEN }}
@@ -59,6 +64,11 @@ jobs:
   test-qcom-distro_linux-qcom-next:
     needs: [prepare-env]
     name: "Test qcom-distro_linux-qcom-next"
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/test-distro.yml
     secrets:
       LAVATOKEN: ${{ secrets.LAVATOKEN }}
