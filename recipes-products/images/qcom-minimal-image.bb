@@ -35,4 +35,13 @@ python __anonymous() {
         d.setVar("KERNEL_DEVICETREE", "")
 }
 
+# On EFI machines the system boots via the ESP partition and UKIs, so the
+# kernel/loader files staged in /boot are unused; remove them so /boot is an
+# empty mountpoint and systemd can mount the ESP there at runtime.
+clean_boot_mountpoint() {
+    rm -rf "${IMAGE_ROOTFS}/boot"
+    mkdir "${IMAGE_ROOTFS}/boot"
+}
+ROOTFS_POSTPROCESS_COMMAND += "${@bb.utils.contains('MACHINE_FEATURES', 'efi', 'clean_boot_mountpoint ', '', d)}"
+
 BAD_RECOMMENDATIONS += "systemd-networkd"
