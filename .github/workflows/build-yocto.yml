@@ -158,6 +158,9 @@ jobs:
           - type: default
             dirname: ""
             yamlfile: ""
+          - type: qcom-next
+            dirname: "_linux-qcom-next"
+            yamlfile: ":ci/linux-qcom-next.yml"
           - type: rt-6.18
             dirname: "_linux-qcom-rt-6.18"
             yamlfile: ":ci/linux-qcom-rt-6.18.yml"
@@ -178,6 +181,16 @@ jobs:
                 name: qcom-distro
             kernel:
                 type: default
+          # qcom-distro coverage is enough for the non-default qcom-next
+          # kernel; 6.18 is the official and supported kernel on this branch
+          - distro:
+                name: qcom-distro-catchall
+            kernel:
+                type: qcom-next
+          - distro:
+                name: performance
+            kernel:
+                type: qcom-next
         include:
           # Additional builds for specific machines
           - machine: qcom-armv8a
@@ -250,7 +263,7 @@ jobs:
 
   publish_summary:
     needs: compile
-    if: always()
+    if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
     runs-on: ubuntu-latest
     steps:
       - uses: qualcomm-linux/meta-qcom/.github/actions/print-build-output@master
@@ -259,8 +272,16 @@ jobs:
           pattern: build-url*
 
   build_successful:
+    if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
     needs: compile
     runs-on: ubuntu-latest
     steps:
       - name: Build completed successfully
-        run: echo "All compile matrix jobs succeeded and artifacts uploaded to S3 bucket"
+        env:
+          COMPILE_RESULT: ${{ needs.compile.result }}
+        run: |
+          if [ "${COMPILE_RESULT}" != "success" ]; then
+            echo "compile result was ${COMPILE_RESULT}"
+            exit 1
+          fi
+          echo "All compile matrix jobs succeeded and artifacts uploaded to S3 bucket"
