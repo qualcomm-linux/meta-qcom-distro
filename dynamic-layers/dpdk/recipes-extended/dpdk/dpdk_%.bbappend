@@ -1,1 +1,1 @@
-PACKAGECONFIG:append:qcom-distro = " shared"
+PACKAGECONFIG:append:qcom-distro = " shared afxdp"
