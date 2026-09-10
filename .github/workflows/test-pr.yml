@@ -3,36 +3,93 @@ name: Test PR build
 run-name: "Tests triggered by PR: ${{ github.event.workflow_run.display_title }}"
 
 on:
-  workflow_run:
+  # workflow_run is the intended privilege separation: the build runs
+  # unprivileged on pull_request (fork token is read-only) and this chain
+  # runs in the base context to submit LAVA jobs and publish results,
+  # consuming the build's artifacts as data, never executing its code.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: ["Build on PR"]
     types:
       - completed
 
+# Cancel an in-flight test run for a PR when a newer commit (re)triggers the
+# build. This stops an orphaned commit's run from continuing to publish the
+# "Test Results" check and PR comment after the PR head has moved on, so the
+# only surviving results belong to the current head. Re-running failed jobs on
+# an existing run keeps the same run id and is therefore not cancelled.
+concurrency:
+  group: test-pr-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 permissions:
-  checks: write
-  pull-requests: write
   contents: read
-  packages: read
 
 jobs:
+  determine-target-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      branch: ${{ steps.branch.outputs.value }}
+      pr_number: ${{ steps.branch.outputs.pr_number }}
+      pr_url: ${{ steps.branch.outputs.pr_url }}
+    steps:
+      # github.event.workflow_run.pull_requests is empty for PRs opened from
+      # forked repositories, so the target branch can't be read from the event
+      # payload. Read it instead from the Event File artifact uploaded by the
+      # build: it is the literal pull_request event that triggered the build and
+      # therefore identifies the target branch reliably, forks included.
+      - name: Download event file
+        uses: actions/download-artifact@v7
+        with:
+          name: Event File
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - id: branch
+        run: |
+          BRANCH=$(jq -r '.pull_request.base.ref // "main"' event.json)
+          echo "::notice title=Target branch::Resolved target branch: $BRANCH"
+          echo "value=$BRANCH" >> "$GITHUB_OUTPUT"
+          # PR number and URL are taken from the pull_request event payload and
+          # forwarded to the test workflow so they can be embedded in the LAVA
+          # test job metadata section.
+          PR_NUMBER=$(jq -r '.number // .pull_request.number // ""' event.json)
+          PR_URL=$(jq -r '.pull_request.html_url // ""' event.json)
+          echo "::notice title=Pull request::PR #${PR_NUMBER} (${PR_URL})"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
   test:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: determine-target-branch
+    if: github.event.workflow_run.conclusion == 'success' && needs.determine-target-branch.outputs.branch == 'main'
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/test.yml
     secrets: inherit
     with:
       build_id: ${{ github.event.workflow_run.id }}
+      pr_number: ${{ needs.determine-target-branch.outputs.pr_number }}
+      pr_url: ${{ needs.determine-target-branch.outputs.pr_url }}
 
   comment-on-pr:
     name: "Comment on PR"
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
     steps:
 
       - name: Download Result Summary
         id: download-result-summary
         uses: actions/download-artifact@v7
         with:
-          artifact-ids: ${{ needs.test.outputs.summary_id }}
+          artifact-ids: ${{ needs.test.outputs.summary_ids }}
           path: results_summary
 
       - name: Download event file
@@ -49,23 +106,38 @@ jobs:
 
       - name: Prepare PR comment
         id: pr_comment_prep
-        run: |
-          echo "## Test run [workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" > pr-comment.txt
-          echo "## Test jobs for commit ${GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA}" >> pr-comment.txt
-          PR_NUMBER=$(cat "artifacts/Event File/event.json" | jq -r ".number")
-          RESULT_FILE_NAME=$(find ./results_summary/ -type f)
-          cat "${RESULT_FILE_NAME}" >> pr-comment.txt
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
         env:
-          GITHUB_EVENT_WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_EVENT_WORKFLOW_RUN_HEAD_SHA: "${{ github.event.workflow_run.head_sha }}"
+        run: |
+          echo "## Test run [workflow](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})" > pr-comment.txt
+          echo "## Test jobs for commit ${GH_EVENT_WORKFLOW_RUN_HEAD_SHA}" >> pr-comment.txt
+          PR_NUMBER=$(cat "artifacts/Event File/event.json" | jq -r ".number")
+          for RESULT_FILE_NAME in $(find ./results_summary/ -type f)
+          do
+              # <summary> lines cover both number of tests
+              # and the table with the list of all jobs
+              # omit the list of all jobs from shortened summary
+              cat "${RESULT_FILE_NAME}" | grep "summary" | grep -v "All jobs summary" >> pr-comment.txt
+          done
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
 
       - name: Comment on PR
         uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3
         with:
           file-path: pr-comment.txt
           pr-number: ${{ steps.pr_comment_prep.outputs.pr_number }}
+          # Update a single tagged comment per PR instead of posting a new one on
+          # every run, so the PR shows one current result instead of accumulating
+          # stale comments (one per run / per superseded commit).
+          comment-tag: test-results
 
   publish-test-results:
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/publish-results.yml
     secrets: inherit
     needs: [test]
