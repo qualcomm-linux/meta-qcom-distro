@@ -1,16 +1,19 @@
 name: Build Yocto
 
 on:
+  schedule:
+    - cron: '0 3 * * 1-6'  # Every day except Sunday at 3:00 AM UTC
   workflow_call:
     inputs:
       profile:
         required: false
         type: string
-        default: "full" # values: pr | full
+        default: "full" # values: pr | full | weekly
     outputs:
       artifacts_url:
         description: "URL to retrieve build artifacts"
         value: ${{ jobs.create-output.outputs.url }}
+  workflow_dispatch:
 
 # Concurrency is used to prevent multiple workflows from running for the same PR
 concurrency:
@@ -207,6 +210,30 @@ jobs:
                 type: default
                 dirname: ""
                 yamlfile: ""
+          - machine: qcom-armv8a
+            distro:
+                name: qcom-distro-multimedia-demo-image
+                yamlfile: ':ci/qcom-distro-multimedia-demo-image.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
+          - machine: rb3gen2-core-kit
+            distro:
+                name: qcom-distro-multimedia-demo-image
+                yamlfile: ':ci/qcom-distro-multimedia-demo-image.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
+          - machine: glymur-crd
+            distro:
+                name: qcom-distro-multimedia-demo-image
+                yamlfile: ':ci/qcom-distro-multimedia-demo-image.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
           - machine: qcs615-ride
             distro:
                 name: qcom-distro
@@ -234,13 +261,13 @@ jobs:
     name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
     steps:
       - name: checkout
-        if: inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')
+        if: (inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')) && (inputs.profile == 'weekly' || matrix.distro.name != 'qcom-distro-multimedia-demo-image')
         uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Run kas build
-        if: inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')
+        if: (inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')) && (inputs.profile == 'weekly' || matrix.distro.name != 'qcom-distro-multimedia-demo-image')
         uses: ./.github/actions/compile
         id: compile_kas
         with:

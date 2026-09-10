@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/siemens/kas/master/kas/schema-kas.json
+
+header:
+  version: 14
+  includes:
+   - ci/qcom-distro-multimedia-image.yml
+
+repos:
+  meta-browser:
+    branch: master
+    url: https://github.com/OSSystems/meta-browser
+    layers:
+      meta-chromium:
+
+target:
+  - qcom-multimedia-demo-image
+  - qcom-multimedia-demo-proprietary-image
