@@ -27,4 +27,10 @@ CORE_IMAGE_BASE_INSTALL:append = " \
     ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-audioreach', ' packagegroup-audioreach', '', d)} \
 "
 
+RTSS_MAILBOX_PACKAGES = "qcom-rtss-mailbox-dlkm qcom-rtss-mailbox-umd qcom-rtss-mailbox-umd-utils"
+CORE_IMAGE_BASE_INSTALL:append:qcs9100-ride-sx = " ${RTSS_MAILBOX_PACKAGES}"
+CORE_IMAGE_BASE_INSTALL:append:qcs8300-ride-sx = " ${RTSS_MAILBOX_PACKAGES}"
+CORE_IMAGE_BASE_INSTALL:append:iq-9075-evk = " ${RTSS_MAILBOX_PACKAGES}"
+CORE_IMAGE_BASE_INSTALL:append:iq-8275-evk = " ${RTSS_MAILBOX_PACKAGES}"
+
 TOOLCHAIN_HOST_TASK:append = " nativesdk-protobuf-camx-compiler"
