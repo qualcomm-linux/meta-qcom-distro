@@ -13,6 +13,8 @@ RDEPENDS:${PN} = "\
     mbw \
     memtester \
     netperf \
+    osbench \
     phoronix-test-suite \
     sysbench \
+    vkmark \
     "
