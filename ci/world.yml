@@ -2,7 +2,8 @@
 
 header:
   version: 14
-  includes:
-    - ci/meta-qcom.yml
-    - repo: meta-qcom
-      file: ci/world.yml
+
+local_conf_header:
+  world_build: |
+    EXCLUDE_FROM_WORLD = "1"
+    EXCLUDE_FROM_WORLD:layer-qcom-distro = "0"
