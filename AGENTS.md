@@ -14,6 +14,18 @@ for Qualcomm based platforms. It provides the `qcom-distro` DISTRO configuration
 and reference images, and depends on the `meta-qcom` BSP layer. The two layers
 are maintained as separate repositories.
 
+## Agent skills
+
+Reusable agent skills for the qualcomm-linux projects are maintained in
+[qcom-linux-skills](https://github.com/qualcomm-linux/qcom-linux-skills),
+in the `SKILL.md` format understood by Claude Code, Codex, Cursor and
+similar agents. Several of them cover the workflows described in this file,
+such as `qcom-yocto-build-image` (build images with kas-container),
+`qcom-yocto-pre-pr-checks` (the CI-parity checks from section 4), and
+`qcom-flash-qdl` / `qcom-boot-validate` (flash and boot-test a board).
+Install them with the repository's `install.sh` and prefer an existing
+skill over re-deriving the workflow; improvements go back to that catalog.
+
 ## 1) Prerequisites
 
 1. `kas-container` available on PATH, or set `KAS_CONTAINER=/abs/path/to/kas-container`
