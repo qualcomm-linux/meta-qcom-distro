@@ -118,7 +118,8 @@ Use the helper scripts for CI parity whenever possible.
 
 ## 6) Pull request / contribution workflow
 
-Follow the repository `README.md` contribution flow:
+Follow the contribution workflow documented in
+[CONTRIBUTING.md](CONTRIBUTING.md):
 
 1. Target branch: **main** for current development, or **wrynose** for the active
    LTS branch (Qualcomm Linux 2.x, aligned with Yocto Project 6.0 LTS). CI builds
@@ -132,11 +133,6 @@ Direct contributions are accepted on **main** and **wrynose**. For the older LTS
 branches **scarthgap** and **kirkstone**, raise an issue with the suggested change
 instead.
 
-Important:
-
-- Follow Yocto submission guidance referenced in README:
-  [Preparing Changes for Submission](https://docs.yoctoproject.org/dev/contributor-guide/submit-changes.html#preparing-changes-for-submission)
-
 Before opening/updating a PR, run CI-equivalent checks in this order:
 
 ```sh
@@ -146,39 +142,20 @@ ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh
 
 ## 7) Commit message best practices (project style)
 
-Use the style seen in recent history:
+Follow the commit subject and message requirements documented in
+[CONTRIBUTING.md](CONTRIBUTING.md): an atomic change per commit, a
+`recipe-name: summary of the changes` subject, a plain-English body that
+explains the problem before the imperative actions, and the mandatory
+`Signed-off-by` (and, when applicable, `Assisted-by`) trailers.
 
-- `component: imperative summary` (preferred when scoped), e.g.
-  - `libvirt: drop qemu PACKAGECONFIG on 32-bit arm hosts (#367)`
-  - `ci/qcom-distro.yml: Enable meta-ai layer (#342)`
-  - `qcom-minimal-image: enable zram swap by default`
-- Or concise imperative summary when cross-cutting.
-
-Every commit **must** include a `Signed-off-by` trailer using the identity from
-the local git configuration:
-
-```sh
-git commit -s   # or pass --signoff; fetches user.name / user.email from git config
-```
-
-If committing programmatically, append the trailer explicitly:
+When committing programmatically, take the `Signed-off-by` identity from the
+local git configuration and append the trailer explicitly:
 
 ```text
 Signed-off-by: $(git config user.name) <$(git config user.email)>
 ```
 
-Never fabricate a name or email; always read from `git config`.
+Never fabricate a name or email; always read them from `git config`.
 
-Guidelines:
-
-- Keep subject line short and specific; capture intent, not a file-by-file dump.
-- Use imperative mood (`Add`, `Update`, `Drop`, `Enable`, `Revert`).
-- Add a body for non-trivial changes explaining **why** and key design decisions.
-- Wrap body lines for readability (~72 chars).
-- Use consistent recipe bump wording for version updates, e.g.
-  `recipe-name: Update to vX.Y.Z`.
-- Include PR reference in subject when appropriate: `(#NNN)`.
-- Avoid mixing unrelated changes in one commit; split logically.
-- Each patch must be logically coherent, self-contained, and independently buildable.
-- The tree must remain in a functional state after every commit.
-- Fixups within the same patch series are not allowed; changes should be corrected in the patch where they are introduced.
+Fixups within the same patch series are not allowed; changes should be
+corrected in the patch where they are introduced.
