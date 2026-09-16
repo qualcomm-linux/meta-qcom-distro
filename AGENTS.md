@@ -14,6 +14,18 @@ for Qualcomm based platforms. It provides the `qcom-distro` DISTRO configuration
 and reference images, and depends on the `meta-qcom` BSP layer. The two layers
 are maintained as separate repositories.
 
+## Agent skills
+
+Reusable agent skills for the qualcomm-linux projects are maintained in
+[qcom-linux-skills](https://github.com/qualcomm-linux/qcom-linux-skills),
+in the `SKILL.md` format understood by Claude Code, Codex, Cursor and
+similar agents. Several of them cover the workflows described in this file,
+such as `qcom-yocto-build-image` (build images with kas-container),
+`qcom-yocto-pre-pr-checks` (the CI-parity checks from section 4), and
+`qcom-flash-qdl` / `qcom-boot-validate` (flash and boot-test a board).
+Install them with the repository's `install.sh` and prefer an existing
+skill over re-deriving the workflow; improvements go back to that catalog.
+
 ## 1) Prerequisites
 
 1. `kas-container` available on PATH, or set `KAS_CONTAINER=/abs/path/to/kas-container`
@@ -118,7 +130,8 @@ Use the helper scripts for CI parity whenever possible.
 
 ## 6) Pull request / contribution workflow
 
-Follow the repository `README.md` contribution flow:
+Follow the contribution workflow documented in
+[CONTRIBUTING.md](CONTRIBUTING.md):
 
 1. Target branch: **main** for current development, or **wrynose** for the active
    LTS branch (Qualcomm Linux 2.x, aligned with Yocto Project 6.0 LTS). CI builds
@@ -132,11 +145,6 @@ Direct contributions are accepted on **main** and **wrynose**. For the older LTS
 branches **scarthgap** and **kirkstone**, raise an issue with the suggested change
 instead.
 
-Important:
-
-- Follow Yocto submission guidance referenced in README:
-  [Preparing Changes for Submission](https://docs.yoctoproject.org/dev/contributor-guide/submit-changes.html#preparing-changes-for-submission)
-
 Before opening/updating a PR, run CI-equivalent checks in this order:
 
 ```sh
@@ -146,39 +154,61 @@ ci/kas-container-shell-helper.sh ci/yocto-check-layer.sh
 
 ## 7) Commit message best practices (project style)
 
-Use the style seen in recent history:
+Follow the commit subject and message requirements documented in
+[CONTRIBUTING.md](CONTRIBUTING.md): an atomic change per commit, a
+`recipe-name: summary of the changes` subject, a plain-English body that
+explains the problem before the imperative actions, and the mandatory
+`Signed-off-by` (and, when applicable, `Assisted-by`) trailers.
 
-- `component: imperative summary` (preferred when scoped), e.g.
-  - `libvirt: drop qemu PACKAGECONFIG on 32-bit arm hosts (#367)`
-  - `ci/qcom-distro.yml: Enable meta-ai layer (#342)`
-  - `qcom-minimal-image: enable zram swap by default`
-- Or concise imperative summary when cross-cutting.
-
-Every commit **must** include a `Signed-off-by` trailer using the identity from
-the local git configuration:
-
-```sh
-git commit -s   # or pass --signoff; fetches user.name / user.email from git config
-```
-
-If committing programmatically, append the trailer explicitly:
+When committing programmatically, take the `Signed-off-by` identity from the
+local git configuration and append the trailer explicitly:
 
 ```text
 Signed-off-by: $(git config user.name) <$(git config user.email)>
 ```
 
-Never fabricate a name or email; always read from `git config`.
+Never fabricate a name or email; always read them from `git config`.
 
-Guidelines:
+Trailer order matters: `Assisted-by` goes **before** `Signed-off-by`, so the
+sign-off is always the last trailer written by the author. A complete
+agent-assisted commit message looks like this:
 
-- Keep subject line short and specific; capture intent, not a file-by-file dump.
-- Use imperative mood (`Add`, `Update`, `Drop`, `Enable`, `Revert`).
-- Add a body for non-trivial changes explaining **why** and key design decisions.
-- Wrap body lines for readability (~72 chars).
-- Use consistent recipe bump wording for version updates, e.g.
-  `recipe-name: Update to vX.Y.Z`.
-- Include PR reference in subject when appropriate: `(#NNN)`.
-- Avoid mixing unrelated changes in one commit; split logically.
-- Each patch must be logically coherent, self-contained, and independently buildable.
-- The tree must remain in a functional state after every commit.
-- Fixups within the same patch series are not allowed; changes should be corrected in the patch where they are introduced.
+```text
+recipe-name: summary of the changes
+
+Explain the problem first, then the change, in plain English.
+
+Assisted-by: AGENT_NAME:MODEL_VERSION
+Signed-off-by: Author Name <author@example.com>
+```
+
+Do not append `Assisted-by` after `Signed-off-by` (for example with
+`git commit -s` followed by `git interpret-trailers --trailer Assisted-by=...`);
+write both trailers in the order above in a single commit message instead.
+
+Fixups within the same patch series are not allowed; changes should be
+corrected in the patch where they are introduced.
+
+## 8) Backporting to a release branch
+
+Fixes land on `main` first and are then backported to the release branch
+(currently `wrynose`). Merged pull requests labelled `backport wrynose` are
+backported automatically by `.github/workflows/backport.yml`; when a manual
+backport is needed (conflicts, or a change that only applies to the release
+branch), follow the same conventions the automation uses:
+
+1. Create a topic branch from the latest release branch, for example
+   `backport/<pr-number>-to-wrynose`.
+2. Cherry-pick the original commits with `git cherry-pick -x <sha>`, which
+   appends the `(cherry picked from commit <sha>)` line for you. Keep the
+   original subject, body, and trailers unchanged, and add your own
+   `Signed-off-by` after the cherry-pick line if it is not already present.
+3. Open the pull request against the release branch with the subject
+   prefixed by the target branch, for example
+   `[Backport wrynose] recipe-name: summary of the changes`, and link the
+   original pull request in the description.
+
+The `[Backport <branch>]` prefix belongs to the pull request subject only.
+The commits themselves are normal patches whose only backport marker is the
+`(cherry picked from commit ...)` line; never add the prefix to a commit
+subject.
