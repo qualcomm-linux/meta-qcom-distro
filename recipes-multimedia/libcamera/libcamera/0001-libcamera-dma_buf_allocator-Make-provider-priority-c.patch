@@ -1,0 +1,296 @@
+From 11b8bc8e1ad2b13b6395213fc36f293b94a1ccc5 Mon Sep 17 00:00:00 2001
+From: Wenmeng Liu <wenmeng.liu@oss.qualcomm.com>
+Date: Thu, 10 Sep 2026 21:55:44 +0800
+Subject: [PATCH] libcamera: dma_buf_allocator: Make provider priority
+ configurable
+
+DmaBufAllocator selects a provider using a fixed priority (CMA heap,
+system heap, then udmabuf) and picks the first one that can be opened.
+On platforms with a small CMA region this is suboptimal: CMA is always
+chosen when present even though it may be too small, while udmabuf,
+backed by pageable system memory, would work.
+
+Make the provider priority order configurable. DmaBufAllocator now
+accepts an ordered list of preferred provider names; providers not
+listed are tried afterwards in the built-in order. When the list is
+empty the historical order is kept, so behaviour is unchanged by
+default.
+
+The allocator itself stays free of any configuration dependency. The
+priority list is read from the 'dma_buf_allocator/provider_priority'
+global configuration option by the components that allow multiple
+providers (software ISP and the virtual pipeline). This lets a platform
+prefer udmabuf by shipping a configuration.yaml.
+
+The set of providers stays limited to what the caller requested, so a
+component that requires physically-contiguous memory (CMA only) is not
+given a udmabuf-backed buffer.
+
+Document the new option in runtime_configuration.rst.
+
+Signed-off-by: Wenmeng Liu <wenmeng.liu@oss.qualcomm.com>
+Upstream-Status: Submitted [https://lists.libcamera.org/pipermail/libcamera-devel/2026-September/062007.html]
+---
+ Documentation/runtime_configuration.rst       | 30 ++++++
+ .../libcamera/internal/dma_buf_allocator.h    |  3 +-
+ src/libcamera/dma_buf_allocator.cpp           | 92 +++++++++++++++----
+ src/libcamera/pipeline/virtual/virtual.cpp    |  6 +-
+ src/libcamera/software_isp/software_isp.cpp   |  6 +-
+ 5 files changed, 115 insertions(+), 22 deletions(-)
+
+diff --git a/Documentation/runtime_configuration.rst b/Documentation/runtime_configuration.rst
+index 2cdffb335..3795d7623 100644
+--- a/Documentation/runtime_configuration.rst
++++ b/Documentation/runtime_configuration.rst
+@@ -33,6 +33,9 @@ file structure:
+ ::
+ 
+   configuration:
++    dma_buf_allocator:
++      provider_priority:
++        - ... # dma-buf provider name: cma, system, or udmabuf
+     ipa:
+       force_isolation: # true/false
+       config_paths:
+@@ -62,6 +65,11 @@ Configuration file example
+    ---
+    version: 1
+    configuration:
++     dma_buf_allocator:
++       provider_priority:
++         - udmabuf
++         - cma
++         - system
+      ipa:
+        config_paths:
+          - /home/user/.libcamera/share/ipa
+@@ -150,6 +158,28 @@ LIBCAMERA_SOFTISP_MODE, software_isp.mode
+ 
+    Example value: ``gpu``
+ 
++dma_buf_allocator.provider_priority
++   Define an ordered list of dma-buf providers to try when libcamera
++   allocates buffers internally (for example for the software ISP). The
++   first requested provider that is available on the system is used. Valid
++   provider names are ``cma`` (CMA dma-heap), ``system`` (system dma-heap)
++   and ``udmabuf`` (memfd + /dev/udmabuf). Providers accepted by a component
++   but not listed here are tried after the listed ones, in libcamera's
++   built-in order.
++
++   This is useful on platforms with a small CMA region, where preferring
++   ``udmabuf`` avoids exhausting the CMA heap.
++
++   Example value:
++
++   ::
++
++      dma_buf_allocator:
++        provider_priority:
++          - udmabuf
++          - cma
++          - system
++
+ pipelines.simple.supported_devices.driver, pipelines.simple.supported_devices.software_isp
+    Override whether software ISP is enabled for the given driver.
+ 
+diff --git a/include/libcamera/internal/dma_buf_allocator.h b/include/libcamera/internal/dma_buf_allocator.h
+index 13600915a..a713675c7 100644
+--- a/include/libcamera/internal/dma_buf_allocator.h
++++ b/include/libcamera/internal/dma_buf_allocator.h
+@@ -31,7 +31,8 @@ public:
+ 
+ 	using DmaBufAllocatorFlags = Flags<DmaBufAllocatorFlag>;
+ 
+-	DmaBufAllocator(DmaBufAllocatorFlags flags = DmaBufAllocatorFlag::CmaHeap);
++	DmaBufAllocator(DmaBufAllocatorFlags flags = DmaBufAllocatorFlag::CmaHeap,
++			const std::vector<std::string> &providerPriority = {});
+ 	~DmaBufAllocator();
+ 	bool isValid() const { return providerHandle_.isValid(); }
+ 	UniqueFD alloc(const char *name, std::size_t size);
+diff --git a/src/libcamera/dma_buf_allocator.cpp b/src/libcamera/dma_buf_allocator.cpp
+index d8c62dd67..ac9716642 100644
+--- a/src/libcamera/dma_buf_allocator.cpp
++++ b/src/libcamera/dma_buf_allocator.cpp
+@@ -8,13 +8,16 @@
+ 
+ #include "libcamera/internal/dma_buf_allocator.h"
+ 
++#include <algorithm>
+ #include <array>
+ #include <fcntl.h>
++#include <optional>
+ #include <sys/ioctl.h>
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <unistd.h>
++#include <vector>
+ 
+ #include <linux/dma-buf.h>
+ #include <linux/dma-heap.h>
+@@ -51,6 +54,26 @@ static constexpr std::array<DmaBufAllocatorInfo, 4> providerInfos = { {
+ 	{ DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf, "/dev/udmabuf" },
+ } };
+ 
++/* Built-in provider priority, used when no other order is specified. */
++static constexpr std::array<DmaBufAllocator::DmaBufAllocatorFlag, 3>
++	defaultProviderPriority = { {
++		DmaBufAllocator::DmaBufAllocatorFlag::CmaHeap,
++		DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap,
++		DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf,
++	} };
++
++static std::optional<DmaBufAllocator::DmaBufAllocatorFlag>
++providerFromName(const std::string &name)
++{
++	if (name == "cma")
++		return DmaBufAllocator::DmaBufAllocatorFlag::CmaHeap;
++	if (name == "system")
++		return DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap;
++	if (name == "udmabuf")
++		return DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf;
++	return {};
++}
++
+ LOG_DEFINE_CATEGORY(DmaBufAllocator)
+ 
+ /**
+@@ -84,35 +107,70 @@ LOG_DEFINE_CATEGORY(DmaBufAllocator)
+ /**
+  * \brief Construct a DmaBufAllocator of a given type
+  * \param[in] type The type(s) of the dma-buf providers to allocate from
++ * \param[in] providerPriority Ordered list of preferred provider names
+  *
+  * The dma-buf provider type is selected with the \a type parameter, which
+  * defaults to the CMA heap. If no provider of the given type can be accessed,
+  * the constructed DmaBufAllocator instance is invalid as indicated by
+  * the isValid() function.
+  *
+- * Multiple types can be selected by combining type flags, in which case
+- * the constructed DmaBufAllocator will match one of the types. If multiple
+- * requested types can work on the system, which provider is used is undefined.
++ * Multiple types can be selected by combining type flags. In that case the
++ * provider to use is chosen by priority: the names listed in \a
++ * providerPriority (valid names are "cma", "system" and "udmabuf") take
++ * precedence, followed by libcamera's built-in order (CMA heap, system heap,
++ * then udmabuf). The first provider that is both requested and accessible is
++ * used, so passing an empty \a providerPriority keeps the built-in order.
+  */
+-DmaBufAllocator::DmaBufAllocator(DmaBufAllocatorFlags type)
++DmaBufAllocator::DmaBufAllocator(DmaBufAllocatorFlags type,
++				 const std::vector<std::string> &providerPriority)
+ {
+-	for (const auto &info : providerInfos) {
+-		if (!(type & info.type))
+-			continue;
++	std::vector<DmaBufAllocatorFlag> priority;
+ 
+-		int ret = ::open(info.deviceNodeName, O_RDWR | O_CLOEXEC, 0);
+-		if (ret < 0) {
+-			ret = errno;
+-			LOG(DmaBufAllocator, Debug)
+-				<< "Failed to open " << info.deviceNodeName << ": "
+-				<< strerror(ret);
++	/*
++	 * The caller can override the provider priority; providers not listed
++	 * are appended in the built-in order, so no acceptable provider is ever
++	 * dropped.
++	 */
++	for (const std::string &name : providerPriority) {
++		auto flag = providerFromName(name);
++		if (flag)
++			priority.push_back(*flag);
++		else
++			LOG(DmaBufAllocator, Warning)
++				<< "Ignoring unknown dma-buf provider \""
++				<< name << "\"";
++	}
++
++	for (DmaBufAllocatorFlag flag : defaultProviderPriority) {
++		if (std::find(priority.begin(), priority.end(), flag) == priority.end())
++			priority.push_back(flag);
++	}
++
++	for (DmaBufAllocatorFlag flag : priority) {
++		if (!(type & flag))
+ 			continue;
++
++		for (const auto &info : providerInfos) {
++			if (info.type != flag)
++				continue;
++
++			int ret = ::open(info.deviceNodeName, O_RDWR | O_CLOEXEC, 0);
++			if (ret < 0) {
++				ret = errno;
++				LOG(DmaBufAllocator, Debug)
++					<< "Failed to open " << info.deviceNodeName
++					<< ": " << strerror(ret);
++				continue;
++			}
++
++			LOG(DmaBufAllocator, Debug) << "Using " << info.deviceNodeName;
++			providerHandle_ = UniqueFD(ret);
++			type_ = info.type;
++			break;
+ 		}
+ 
+-		LOG(DmaBufAllocator, Debug) << "Using " << info.deviceNodeName;
+-		providerHandle_ = UniqueFD(ret);
+-		type_ = info.type;
+-		break;
++		if (providerHandle_.isValid())
++			break;
+ 	}
+ 
+ 	if (!providerHandle_.isValid())
+diff --git a/src/libcamera/pipeline/virtual/virtual.cpp b/src/libcamera/pipeline/virtual/virtual.cpp
+index 81d2dddab..6df7aee77 100644
+--- a/src/libcamera/pipeline/virtual/virtual.cpp
++++ b/src/libcamera/pipeline/virtual/virtual.cpp
+@@ -32,6 +32,7 @@
+ #include <libcamera/property_ids.h>
+ 
+ #include "libcamera/internal/camera.h"
++#include "libcamera/internal/camera_manager.h"
+ #include "libcamera/internal/dma_buf_allocator.h"
+ #include "libcamera/internal/formats.h"
+ #include "libcamera/internal/framebuffer.h"
+@@ -239,8 +240,9 @@ bool PipelineHandlerVirtual::created_ = false;
+ PipelineHandlerVirtual::PipelineHandlerVirtual(CameraManager *manager)
+ 	: PipelineHandler(manager),
+ 	  dmaBufAllocator_(DmaBufAllocator::DmaBufAllocatorFlag::CmaHeap |
+-			   DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap |
+-			   DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf)
++				   DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap |
++				   DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf,
++			   manager->_d()->configuration().listOption({ "dma_buf_allocator", "provider_priority" }).value_or(utils::defopt))
+ {
+ }
+ 
+diff --git a/src/libcamera/software_isp/software_isp.cpp b/src/libcamera/software_isp/software_isp.cpp
+index c73a16ce0..57b883742 100644
+--- a/src/libcamera/software_isp/software_isp.cpp
++++ b/src/libcamera/software_isp/software_isp.cpp
+@@ -24,6 +24,7 @@
+ #include <libcamera/stream.h>
+ 
+ #include "libcamera/internal/bayer_format.h"
++#include "libcamera/internal/camera_manager.h"
+ #include "libcamera/internal/framebuffer.h"
+ #include "libcamera/internal/software_isp/debayer_params.h"
+ 
+@@ -83,8 +84,9 @@ SoftwareIsp::SoftwareIsp(PipelineHandler *pipe, const CameraSensor *sensor,
+ 			 ControlInfoMap *ipaControls)
+ 	: ispWorkerThread_("SWIspWorker"),
+ 	  dmaHeap_(DmaBufAllocator::DmaBufAllocatorFlag::CmaHeap |
+-		   DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap |
+-		   DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf)
++			   DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap |
++			   DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf,
++		   pipe->cameraManager()->_d()->configuration().listOption({ "dma_buf_allocator", "provider_priority" }).value_or(utils::defopt))
+ {
+ 	if (!dmaHeap_.isValid()) {
+ 		LOG(SoftwareIsp, Error) << "Failed to create DmaBufAllocator object";
+-- 
+2.34.1
+
