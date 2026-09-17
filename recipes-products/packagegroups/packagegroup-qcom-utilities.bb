@@ -62,6 +62,7 @@ RDEPENDS:${PN}-network-utils = " \
     openssh-scp \
     openssh-ssh \
     paho-mqtt-c \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'polkit', 'polkit-group-rule-network', '', d)} \
     rsync \
     smbclient \
     tcpdump \
