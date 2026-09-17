@@ -17,6 +17,7 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     camxfirmware-kodiak:LICENSE.qcom-2 \
     camxfirmware-lemans:LICENSE.qcom-2 \
     camxfirmware-monaco:LICENSE.qcom-2 \
+    camxfirmware-purwa:LICENSE.qcom-2 \
     camxfirmware-talos:LICENSE.qcom-2 \
     firmware-qcom-boot-glymur:LICENSE.qcom-2 \
     firmware-qcom-boot-iq-x7181:LICENSE.qcom-2 \
