@@ -1,6 +1,6 @@
 DISTRO_NAME = "Qualcomm Linux Reference Distro"
 
-DISTRO_VERSION = "2.0"
+DISTRO_VERSION = "2.1"
 
 # SDK variables.
 SDK_VERSION = "${DISTRO_VERSION}"
