@@ -43,6 +43,9 @@ VIRTUAL-RUNTIME_base-utils-syslog = "rsyslog"
 IMAGE_CLASSES += "image_types_qcom"
 IMAGE_FSTYPES += "qcomflash"
 
+# Allow fs-verity on the ext4 root filesystem
+EXTRA_IMAGECMD:ext4:append = " -O verity"
+
 # Set a default package class to avoid surprises
 PACKAGE_CLASSES = "package_rpm"
 
