@@ -13,6 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     kernel-modules \
     packagegroup-qcom-utilities-bluetooth-utils \
     packagegroup-qcom-utilities-filesystem-utils \
+    qcom-raw-partitions-udev-rules \
     resize-rootfs \
     zram \
 "
