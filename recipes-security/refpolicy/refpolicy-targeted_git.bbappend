@@ -6,4 +6,5 @@ SRC_URI:append:qcom-distro = " \
     file://0004-docker-Add-tunable-gated-optional-policy-for-dockerd.patch \
     file://0005-xdg-Add-interface-for-mounting-on-Downloads-director.patch \
     file://0006-docker-Add-tunable-for-mounting-on-XDG-Downloads-dir.patch \
+    file://0007-policy-tpm2-fix-tpm2-abrmd-D-Bus-communication-under-enf.patch \
 "
