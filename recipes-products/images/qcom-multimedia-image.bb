@@ -21,6 +21,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     libdrm-tests \
     ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'packagegroup-container', '', d)} \
     packagegroup-qcom-benchmark \
+    packagegroup-qcom-quickboot \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
@@ -30,6 +31,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     pipewire-spa-tools \
     pipewire-tools \
     pulseaudio-pactl \
+    quickboot-camera-camss \
     tensorflow-lite-tools \
     thermald \
     userspace-resource-manager \
