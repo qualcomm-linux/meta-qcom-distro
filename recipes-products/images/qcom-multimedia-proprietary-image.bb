@@ -21,6 +21,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     libdiag-bin \
     onnxruntime-qnn \
     qcom-adreno \
+    qcom-rtss-can \
     qcom-sensors-binaries \
     quickboot-camera-camx \
 "
