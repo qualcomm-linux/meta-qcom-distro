@@ -35,7 +35,6 @@ CORE_IMAGE_BASE_INSTALL += " \
     tensorflow-lite-tools \
     thermald \
     userspace-resource-manager \
-    userspace-resource-manager-extensions \
     weston \
     weston-examples \
     weston-init \
