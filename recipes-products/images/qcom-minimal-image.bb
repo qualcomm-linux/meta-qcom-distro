@@ -13,6 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     kernel-modules \
     packagegroup-qcom-utilities-bluetooth-utils \
     packagegroup-qcom-utilities-filesystem-utils \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'polkit', 'polkit-dbus polkit-service', '', d)} \
     qcom-raw-partitions-udev-rules \
     resize-rootfs \
     zram \
