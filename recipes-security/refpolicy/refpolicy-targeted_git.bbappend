@@ -7,3 +7,5 @@ SRC_URI:append:qcom-distro = " \
     file://0005-xdg-Add-interface-for-mounting-on-Downloads-director.patch \
     file://0006-docker-Add-tunable-for-mounting-on-XDG-Downloads-dir.patch \
 "
+
+POLICY_CUSTOM_BUILDOPT:append:qcom-distro = " pipewire_system_service"
