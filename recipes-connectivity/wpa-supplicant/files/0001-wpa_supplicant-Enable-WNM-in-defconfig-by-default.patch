@@ -1,0 +1,32 @@
+From 91e87e3d509ffdf5342d4533e494e4be51e08a1f Mon Sep 17 00:00:00 2001
+From: Gaole Zhang <gaole.zhang@oss.qualcomm.com>
+Date: Tue, 16 Jun 2026 12:19:11 +0800
+Subject: [PATCH] wpa_supplicant: Enable WNM in defconfig by default
+
+IEEE 802.11v WNM is widely used by access points to improve roaming
+behavior and power efficiency. With CONFIG_WNM enabled, wpa_supplicant
+can supports WNM related features such as BSS Transition Management and
+WNM Sleep Mode. Enable CONFIG_WNM in wpa_supplicant/defconfig so it is
+more likely to be built if this documentation file is used as a starting
+point for a project build configuration.
+
+Upstream-Status: Backport [91e87e3d509ffdf5342d4533e494e4be51e08a1f]
+Signed-off-by: Gaole Zhang <gaole.zhang@oss.qualcomm.com>
+---
+ wpa_supplicant/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/wpa_supplicant/defconfig b/wpa_supplicant/defconfig
+index 0a22782e..4955854f 100644
+--- a/wpa_supplicant/defconfig
++++ b/wpa_supplicant/defconfig
+@@ -512,6 +512,6 @@ CONFIG_IEEE80211BE=y
+
+ # Wireless Network Management (IEEE Std 802.11v-2011)
+-#CONFIG_WNM=y
++CONFIG_WNM=y
+ 
+ # Interworking (IEEE 802.11u)
+ # This can be used to enable functionality to improve interworking with
+-- 
+2.34.1
