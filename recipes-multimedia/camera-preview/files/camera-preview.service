@@ -1,0 +1,22 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Demo/sample systemd service for camera preview.
+# Disabled by default; enable it explicitly when using the demo.
+
+[Unit]
+Description=Camera Preview Demo
+Requires=qti-cam-server.service weston.service
+After=qti-cam-server.service weston.service
+
+[Service]
+User=root
+Type=simple
+LimitCORE=infinity
+ExecStart=/usr/bin/camera-preview
+Restart=always
+RestartSec=1s
+Environment="WAYLAND_DISPLAY=/run/wayland-0"
+
+[Install]
+WantedBy=multi-user.target

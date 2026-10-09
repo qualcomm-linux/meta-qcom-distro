@@ -1,0 +1,42 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Camera preview demo using GStreamer (gst-launch-1.0).
+# The application is started by camera-preview.service when the demo
+# service is explicitly enabled.
+
+set -eu
+
+SERVICE_NAME="camera-preview.service"
+CAMERA_FORMAT="${CAMERA_FORMAT:-NV12_Q08C}"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-1080}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+CAMERA_CAPS="video/x-raw,format=${CAMERA_FORMAT},width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+
+log_message() {
+    level="$1"
+    message="$2"
+
+    printf '[%s] %s\n' "$level" "$message"
+
+    case "$level" in
+        INFO)    kmsg_level=6 ;;
+        WARNING) kmsg_level=4 ;;
+        ERROR)   kmsg_level=3 ;;
+        *)       kmsg_level=6 ;;
+    esac
+
+    printf '<%s>%s: %s\n' "$kmsg_level" "$SERVICE_NAME" "$message" \
+        > /dev/kmsg 2>/dev/null || true
+}
+
+log_message "INFO" "Camera Preview Demo App Started"
+log_message "INFO" "Starting preview with ${CAMERA_CAPS}"
+
+# Replace the shell process so systemd signals reach gst-launch directly.
+exec env GST_REGISTRY_UPDATE=no gst-launch-1.0 -e \
+    qtiqmmfsrc video_0::type=preview \
+    ! "${CAMERA_CAPS}" \
+    ! waylandsink fullscreen=true
