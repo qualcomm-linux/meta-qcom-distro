@@ -1,0 +1,74 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# This demo plays a chime through PipeWire and logs status to both the
+# journal and kernel log for boot-time correlation.
+
+set -eu
+
+SERVICE_NAME="audio-chime.service"
+TARGET_SINK="${TARGET_SINK:-pal_sink_speaker_ll}"
+
+log_message() {
+    level="$1"
+    message="$2"
+
+    case "$level" in
+        INFO)    kmsg_level=6 ;;
+        WARNING) kmsg_level=4 ;;
+        ERROR)   kmsg_level=3 ;;
+        *)       kmsg_level=6 ;;
+    esac
+
+    printf '[%s] %s\n' "$level" "$message"
+    printf '<%s>%s: %s\n' "$kmsg_level" "$SERVICE_NAME" "$message" \
+        > /dev/kmsg 2>/dev/null || true
+}
+
+boot_time() {
+    awk '{ print $1 }' /proc/uptime
+}
+
+if [ "$#" -ne 1 ]; then
+    log_message "ERROR" "Usage: $0 <audio-file>"
+    exit 2
+fi
+
+AUDIO_FILE="$1"
+
+if [ ! -r "$AUDIO_FILE" ]; then
+    log_message "ERROR" "Audio file is not readable: $AUDIO_FILE"
+    exit 1
+fi
+
+log_message "INFO" "Starting audio chime: file=$AUDIO_FILE sink=$TARGET_SINK"
+
+START_TIME=$(boot_time)
+
+TMP_DIR=$(mktemp -d)
+FIFO="${TMP_DIR}/pw-play"
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+mkfifo "$FIFO" || {
+    log_message "ERROR" "Failed to create output FIFO"
+    exit 1
+}
+
+# Stream pw-play output while retaining its exit status.
+pw-play --target="$TARGET_SINK" "$AUDIO_FILE" >"$FIFO" 2>&1 &
+PW_PLAY_PID=$!
+while IFS= read -r line; do
+    log_message "INFO" "pw-play: $line"
+done < "$FIFO"
+
+if wait "$PW_PLAY_PID"; then
+    END_TIME=$(boot_time)
+    DURATION=$(awk -v start="$START_TIME" -v end="$END_TIME" \
+        'BEGIN { printf "%.3f", end - start }')
+    log_message "INFO" "Audio playback completed in ${DURATION}s"
+else
+    status=$?
+    log_message "ERROR" "Audio playback failed with exit code: $status"
+    exit 1
+fi

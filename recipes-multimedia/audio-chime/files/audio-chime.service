@@ -1,0 +1,28 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Demo/sample oneshot systemd service for audio chime playback.
+#
+# It depends on PipeWire and can be used as a checkpoint when profiling
+# audio readiness during boot.
+#
+# Disabled by default. Enable manually for boot time measurement and
+# profiling.
+
+[Unit]
+Description=Audio Chime Demo
+Requires=pipewire.service
+After=pipewire.service
+ConditionPathExists=/usr/share/sounds/sample-3s.wav
+
+[Service]
+User=root
+Type=oneshot
+
+# RemainAfterExit ensures service isn't restarted continuously
+RemainAfterExit=yes
+ExecStart=/usr/bin/audio-chime /usr/share/sounds/sample-3s.wav
+TimeoutStartSec=15
+
+[Install]
+WantedBy=multi-user.target
