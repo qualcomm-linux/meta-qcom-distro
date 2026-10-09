@@ -8,6 +8,7 @@ COMPATIBLE_MACHINE:aarch64 = "(.*)"
 
 CORE_IMAGE_BASE_INSTALL += " \
     camera-service \
+    camera-preview \
     camx-dlkm \
     camx-hamoa \
     camx-kodiak \
