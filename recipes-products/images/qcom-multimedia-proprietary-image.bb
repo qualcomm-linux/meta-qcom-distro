@@ -22,6 +22,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     onnxruntime-qnn \
     qcom-adreno \
     qcom-sensors-binaries \
+    quickboot-audio-chime \
     quickboot-camera-camx \
 "
 
