@@ -6,10 +6,18 @@ BAD_RECOMMENDATIONS += " \
     libfastcvdsp-stub1 \
     libfastcvopt1 \
     libvulkan-adreno1 \
+    qairt-sdk-hexagon-v66 \
+    qairt-sdk-hexagon-v68 \
+    qairt-sdk-hexagon-v73 \
+    qairt-sdk-hexagon-v75 \
 "
 
 # Error out if any of the closed source packages get pulled into the image
-INCOMPATIBLE_LICENSE = "LICENSE.qcom LICENSE.qcom-2"
+INCOMPATIBLE_LICENSE = " \
+    LICENSE.qcom \
+    LICENSE.qcom-2 \
+    qcom-ai-stack \
+"
 
 # Allow closed source firmware packages
 INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
