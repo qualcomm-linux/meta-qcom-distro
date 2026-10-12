@@ -1,0 +1,22 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Reference systemd entry point for QuickBoot audio readiness validation.
+# Disabled by default; enable it explicitly from a validation or test flow.
+
+[Unit]
+Description=QuickBoot Audio Chime Readiness Test
+Requires=pipewire.service
+After=pipewire.service
+
+[Service]
+# Run as root to access the system PipeWire instance and audio devices.
+User=root
+Type=oneshot
+StandardOutput=journal
+StandardError=journal
+ExecStart=/usr/bin/quickboot-audio-chime /usr/share/sounds/sample-3s.wav
+TimeoutStartSec=15
+
+[Install]
+WantedBy=multi-user.target
