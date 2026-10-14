@@ -10,6 +10,7 @@ RDEPENDS:${PN} = "\
     fio \
     glmark2 \
     iperf2 \
+    linpack \
     lmbench \
     mbw \
     memtester \
