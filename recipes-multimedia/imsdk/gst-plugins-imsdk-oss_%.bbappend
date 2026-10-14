@@ -9,12 +9,12 @@ do_install:append:qcom-distro() {
 
 FILES:${PN}-apps:append:qcom-distro = " ${datadir}/qdemo/weston-qdemo-launcher.ini"
 
-pkg_postinst_ontarget:${PN}-apps:qcom-distro() {
-    cat /usr/share/qdemo/weston-qdemo-launcher.ini >> /etc/xdg/weston/weston.ini
+pkg_postinst:${PN}-apps:qcom-distro() {
+    cat $D/usr/share/qdemo/weston-qdemo-launcher.ini >> $D/etc/xdg/weston/weston.ini
 }
 
-pkg_postrm_ontarget:${PN}-apps:qcom-distro() {
-    if [ -f /etc/xdg/weston/weston.ini ]; then
-        sed -i '/^$/{N;N;N; /^\n\[launcher\]\nicon=\/usr\/share\/qdemo\/Qdemo.png\npath=\/usr\/bin\/Qdemo$/d}' /etc/xdg/weston/weston.ini
+pkg_postrm:${PN}-apps:qcom-distro() {
+    if [ -f $D/etc/xdg/weston/weston.ini ]; then
+        sed -i '/^$/{N;N;N; /^\n\[launcher\]\nicon=\/usr\/share\/qdemo\/Qdemo.png\npath=\/usr\/bin\/Qdemo$/d}' $D/etc/xdg/weston/weston.ini
     fi
 }
