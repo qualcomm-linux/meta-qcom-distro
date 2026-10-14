@@ -1,0 +1,33 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# QuickBoot CAMX camera preview reference application using GStreamer.
+# The application is a test vehicle for camera and display readiness
+# measurements. It can be run directly or through its opt-in systemd unit.
+
+set -eu
+
+APP_NAME="quickboot-camera-preview-camx"
+CAMERA_FORMAT="${CAMERA_FORMAT:-NV12_Q08C}"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-1080}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+CAMERA_CAPS="video/x-raw,format=${CAMERA_FORMAT},width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+
+log_message() {
+    level="$1"
+    message="$2"
+
+    printf '[%s] %s: %s\n' "$level" "$APP_NAME" "$message"
+}
+
+log_message "INFO" "QuickBoot CAMX Camera Preview Test Started"
+log_message "INFO" "Starting preview with ${CAMERA_CAPS}"
+
+# Replace the shell process so signals from the test harness or systemd reach
+# gst-launch directly.
+exec env GST_REGISTRY_UPDATE=no gst-launch-1.0 -e \
+    qtiqmmfsrc video_0::type=preview \
+    ! "${CAMERA_CAPS}" \
+    ! waylandsink fullscreen=true
