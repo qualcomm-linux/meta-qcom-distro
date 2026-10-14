@@ -8,13 +8,37 @@ do_install:append:qcom-distro() {
 }
 
 FILES:${PN}-apps:append:qcom-distro = " ${datadir}/qdemo/weston-qdemo-launcher.ini"
+RDEPENDS:${PN}-apps:append:qcom-distro = " weston-init"
 
-pkg_postinst_ontarget:${PN}-apps:qcom-distro() {
-    cat /usr/share/qdemo/weston-qdemo-launcher.ini >> /etc/xdg/weston/weston.ini
+pkg_postinst:${PN}-apps:qcom-distro() {
+    weston_config="$D${sysconfdir}/xdg/weston/weston.ini"
+    qdemo_launcher="$D${datadir}/qdemo/weston-qdemo-launcher.ini"
+
+    if [ ! -f "$weston_config" ]; then
+        echo "QDemo launcher cannot update missing $weston_config" >&2
+        exit 1
+    fi
+
+    if ! grep -Fqx 'path=/usr/bin/Qdemo' "$weston_config"; then
+        printf '\n' >> "$weston_config"
+        cat "$qdemo_launcher" >> "$weston_config"
+    fi
 }
 
-pkg_postrm_ontarget:${PN}-apps:qcom-distro() {
-    if [ -f /etc/xdg/weston/weston.ini ]; then
-        sed -i '/^$/{N;N;N; /^\n\[launcher\]\nicon=\/usr\/share\/qdemo\/Qdemo.png\npath=\/usr\/bin\/Qdemo$/d}' /etc/xdg/weston/weston.ini
+pkg_prerm:${PN}-apps:qcom-distro() {
+    weston_config="$D${sysconfdir}/xdg/weston/weston.ini"
+
+    if [ -f "$weston_config" ]; then
+        sed -i '
+            /^\[launcher\]$/ {
+                N
+                /\nicon=\/usr\/share\/qdemo\/Qdemo\.png$/ {
+                    N
+                    /\npath=\/usr\/bin\/Qdemo$/d
+                }
+            }
+            P
+            D
+        ' "$weston_config"
     fi
 }
