@@ -22,8 +22,10 @@ CORE_IMAGE_BASE_INSTALL += " \
     onnxruntime-qnn \
     qcom-adreno \
     qcom-sensors-binaries \
+    quickboot-camera-camx \
     qwes \
 "
+
 CORE_IMAGE_BASE_INSTALL:append = " \
     ${@bb.utils.contains('BBFILE_COLLECTIONS', 'meta-audioreach', ' packagegroup-audioreach', '', d)} \
 "
