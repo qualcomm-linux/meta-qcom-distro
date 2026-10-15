@@ -1,0 +1,32 @@
+From 14f5b069a04c7f4851150d693e51b82e67bd5299 Mon Sep 17 00:00:00 2001
+From: gaolez <gaole.zhang@oss.qualcomm.com>
+Date: Mon, 8 Jun 2026 13:06:32 +0800
+Subject: [PATCH] wpa_supplicant: Enable MBO in defconfig by default
+
+Wi-Fi Agile Multiband (MBO) is commonly deployed and provides useful
+functionality for many devices. Enable CONFIG_MBO in
+wpa_supplicant/defconfig so it is more likely to be built if this
+documentation file is used as a starting point for a project build
+configuration.
+
+Upstream-Status: Backport [14f5b069a04c7f4851150d693e51b82e67bd5299]
+Signed-off-by: Gaole Zhang <gaole.zhang@oss.qualcomm.com>
+---
+ wpa_supplicant/defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/wpa_supplicant/defconfig b/wpa_supplicant/defconfig
+index 75832dbba..7aefe5413 100644
+--- a/wpa_supplicant/defconfig
++++ b/wpa_supplicant/defconfig
+@@ -603,7 +603,7 @@ CONFIG_WIFI_DISPLAY=y
+ #CONFIG_ACS=y
+ 
+ # Support Multi Band Operation
+-#CONFIG_MBO=y
++CONFIG_MBO=y
+ 
+ # Fast Initial Link Setup (FILS) (IEEE 802.11ai)
+ #CONFIG_FILS=y
+-- 
+2.34.1
