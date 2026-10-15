@@ -7,3 +7,11 @@ SRC_URI:append:qcom-distro = " \
     file://0005-xdg-Add-interface-for-mounting-on-Downloads-director.patch \
     file://0006-docker-Add-tunable-for-mounting-on-XDG-Downloads-dir.patch \
 "
+
+do_install:append:qcom-distro-selinux() {
+    install -d ${D}/root/Downloads
+}
+
+FILES:${PN}:append:qcom-distro-selinux = " \
+    /root/Downloads \
+"
