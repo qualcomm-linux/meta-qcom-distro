@@ -39,6 +39,7 @@ RDEPENDS:${PN}-filesystem-utils = " \
     e2fsprogs-mke2fs \
     e2fsprogs-resize2fs \
     e2fsprogs-tune2fs \
+    fsverity-utils \
     "
 
 RDEPENDS:${PN}-gpu-utils = " \
