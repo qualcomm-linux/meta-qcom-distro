@@ -7,3 +7,10 @@ SRC_URI:append:qcom-distro = " \
     file://0005-xdg-Add-interface-for-mounting-on-Downloads-director.patch \
     file://0006-docker-Add-tunable-for-mounting-on-XDG-Downloads-dir.patch \
 "
+
+# Enable Docker-related SELinux booleans when the virtualization distro feature is enabled.
+POLICY_BOOLEANS:append:qcom-distro = " \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', \
+        'dockerd_connect_user_services=true \
+         dockerd_mounton_xdg_downloads=true', '', d)} \
+"
