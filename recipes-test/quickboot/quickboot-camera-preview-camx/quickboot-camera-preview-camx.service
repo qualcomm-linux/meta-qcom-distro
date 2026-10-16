@@ -1,0 +1,21 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Reference systemd entry point for QuickBoot camera readiness validation.
+# Disabled by default; enable it explicitly from a validation or test flow.
+
+[Unit]
+Description=QuickBoot CAMX Camera Preview Readiness Test
+Requires=qti-cam-server.service weston.service
+After=qti-cam-server.service weston.service
+
+[Service]
+User=weston
+Group=weston
+SupplementaryGroups=dmaheap
+Type=simple
+ExecStart=/usr/bin/quickboot-camera-preview-camx
+Environment="WAYLAND_DISPLAY=/run/wayland-0"
+
+[Install]
+WantedBy=multi-user.target

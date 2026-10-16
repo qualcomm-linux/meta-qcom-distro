@@ -1,0 +1,21 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Reference systemd entry point for QuickBoot audio readiness validation.
+# Disabled by default; enable it explicitly from a validation or test flow.
+
+[Unit]
+Description=QuickBoot Audio Readiness Test
+Requires=pipewire.service
+After=pipewire.service
+ConditionPathExists=/usr/share/sounds/alsa/Front_Center.wav
+
+[Service]
+# Run as root to access the system PipeWire instance and audio devices.
+User=root
+Type=oneshot
+ExecStart=/usr/bin/quickboot-audio-readiness /usr/share/sounds/alsa/Front_Center.wav
+TimeoutStartSec=15
+
+[Install]
+WantedBy=multi-user.target
