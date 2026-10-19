@@ -162,7 +162,7 @@ jobs:
           - name: qcom-distro-catchall
             yamlfile: ':ci/qcom-distro-catchall.yml'
           - name: performance
-            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml'
+            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml:ci/nospdx.yml'
         kernel:
           - type: default
             dirname: ""
