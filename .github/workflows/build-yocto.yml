@@ -128,6 +128,7 @@ jobs:
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
           cache_dir: ${{env.CACHE_DIR}}
+          profile: ${{ inputs.profile }}
 
   compile:
     needs: compile_warm_up
@@ -283,6 +284,7 @@ jobs:
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
           cache_dir: ${{env.CACHE_DIR}}
+          profile: ${{ inputs.profile }}
 
   publish_summary:
     needs: compile
