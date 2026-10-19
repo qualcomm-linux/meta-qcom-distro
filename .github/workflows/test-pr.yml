@@ -69,7 +69,8 @@ jobs:
       checks: write
       pull-requests: write
     uses: ./.github/workflows/test.yml
-    secrets: inherit
+    secrets:
+      LAVATOKEN: ${{ secrets.LAVATOKEN }}
     with:
       build_id: ${{ github.event.workflow_run.id }}
       pr_number: ${{ needs.determine-target-branch.outputs.pr_number }}
@@ -143,7 +144,8 @@ jobs:
       checks: write
       pull-requests: write
     uses: ./.github/workflows/publish-results.yml
-    secrets: inherit
+    secrets:
+      TEST_REPORTING_APP_TOKEN: ${{ secrets.TEST_REPORTING_APP_TOKEN }}
     needs: [test]
     with:
       commit: ${{ github.event.workflow_run.sha }}
