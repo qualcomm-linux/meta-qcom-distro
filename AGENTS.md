@@ -98,7 +98,8 @@ export KAS_YAMLS="ci/rb3gen2-core-kit.yml:ci/qcom-distro.yml"
 ## 4) Run routine checks via CI helper scripts
 
 `ci/kas-container-shell-helper.sh` enters a kas shell composed from
-`ci/base.yml:ci/qcom-distro.yml` and runs the given script with `/repo /work`.
+`ci/base.yml:ci/qcom-distro.yml` (or from `KAS_YAMLS` when it is set) and
+runs the given script with `/repo /work`.
 
 For routine local validation, run:
 
