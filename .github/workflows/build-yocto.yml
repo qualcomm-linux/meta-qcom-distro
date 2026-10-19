@@ -99,6 +99,7 @@ jobs:
     needs: kas-setup
     if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
+    timeout-minutes: 480
     strategy:
       fail-fast: true
       matrix:
@@ -134,6 +135,7 @@ jobs:
     needs: compile_warm_up
     if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
+    timeout-minutes: 480
     outputs:
       url: ${{ steps.compile_kas.outputs.url }}
     strategy:
