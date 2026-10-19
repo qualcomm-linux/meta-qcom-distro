@@ -14,6 +14,9 @@ on:
         description: "URL to retrieve build artifacts"
         value: ${{ jobs.create-output.outputs.url }}
 
+permissions:
+  contents: read
+
 # Concurrency is used to prevent multiple workflows from running for the same PR
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('push-{0}', github.sha) }}
@@ -98,6 +101,10 @@ jobs:
   compile_warm_up:
     needs: kas-setup
     if: github.repository_owner == 'qualcomm-linux'
+    permissions:
+      contents: read
+      packages: read
+      actions: read
     runs-on: [self-hosted, qcom-u2404, amd64]
     timeout-minutes: 480
     strategy:
@@ -134,6 +141,10 @@ jobs:
   compile:
     needs: compile_warm_up
     if: github.repository_owner == 'qualcomm-linux'
+    permissions:
+      contents: read
+      packages: read
+      actions: read
     runs-on: [self-hosted, qcom-u2404, amd64]
     timeout-minutes: 480
     outputs:
@@ -301,6 +312,9 @@ jobs:
   publish_summary:
     needs: compile
     if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-latest
     steps:
       - uses: qualcomm-linux/meta-qcom/.github/actions/print-build-output@master
