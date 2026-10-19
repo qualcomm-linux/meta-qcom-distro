@@ -128,7 +128,7 @@ jobs:
           persist-credentials: false
 
       - name: Run kas build
-        uses: ./.github/actions/compile
+        uses: $/.github/actions/compile
         with:
           machine: ${{matrix.machine}}
           distro_yaml: ${{matrix.distro.yamlfile}}
@@ -298,7 +298,7 @@ jobs:
 
       - name: Run kas build
         if: (inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')) && (inputs.profile == 'weekly' || matrix.distro.profile != 'weekly')
-        uses: ./.github/actions/compile
+        uses: $/.github/actions/compile
         id: compile_kas
         with:
           machine: ${{matrix.machine}}
