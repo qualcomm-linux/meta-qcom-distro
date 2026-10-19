@@ -97,8 +97,31 @@ jobs:
         run: |
           echo "CACHE_DIR=${CACHE_DIR}" >> $GITHUB_OUTPUT
 
-  compile_warm_up:
+  # Builds the common core (native tools, toolchain and the qcom-distro
+  # images of the generic machine) once, so the compile_stage2 seeds reuse it
+  # instead of each building it.
+  compile_stage1:
     needs: [kas-setup, compile-env]
+    if: github.repository_owner == 'qualcomm-linux'
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+    uses: $/.github/workflows/compile.yml
+    with:
+      name: qcom-armv8a/qcom-distro
+      world: false
+      machine: 'qcom-armv8a'
+      distro_yaml: ':ci/qcom-distro.yml'
+      distro_name: 'qcom-distro'
+      kernel_yaml: ''
+      kernel_dirname: ''
+      cache_dir: ${{ needs.compile-env.outputs.CACHE_DIR }}
+      profile: ${{ inputs.profile }}
+
+  # One seed build per distro family and target tune.
+  compile_stage2:
+    needs: [compile_stage1, compile-env]
     if: github.repository_owner == 'qualcomm-linux'
     permissions:
       contents: read
@@ -109,15 +132,26 @@ jobs:
       matrix:
         machine:
           - glymur-crd
-          - qcom-armv8a
           - rb3gen2-core-kit
         distro:
           - name: qcom-distro
             yamlfile: ':ci/qcom-distro.yml'
+          - name: qcom-distro-catchall
+            yamlfile: ':ci/qcom-distro-catchall.yml'
         kernel:
           - type: default
             dirname: ""
             yamlfile: ""
+        include:
+          # qcom-armv8a qcom-distro is built by compile_stage1
+          - machine: qcom-armv8a
+            distro:
+                name: qcom-distro-catchall
+                yamlfile: ':ci/qcom-distro-catchall.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
     uses: $/.github/workflows/compile.yml
     with:
       name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
@@ -137,7 +171,7 @@ jobs:
       profile: ${{ inputs.profile }}
 
   compile_sdk:
-    needs: [compile_warm_up, compile-env]
+    needs: [compile_stage2, compile-env]
     if: github.repository_owner == 'qualcomm-linux'
     permissions:
       contents: read
@@ -157,8 +191,8 @@ jobs:
       cache_dir: ${{ needs.compile-env.outputs.CACHE_DIR }}
       profile: ${{ inputs.profile }}
 
-  compile:
-    needs: [compile_warm_up, compile-env]
+  compile_stage3:
+    needs: [compile_stage2, compile-env]
     if: github.repository_owner == 'qualcomm-linux'
     permissions:
       contents: read
@@ -201,10 +235,15 @@ jobs:
             dirname: "_linux-qcom-rt-6.18"
             yamlfile: ":ci/linux-qcom-rt-6.18.yml"
         exclude:
-          # Exclude jobs from compile_warm_up
+          # Exclude jobs from compile_stage1 and compile_stage2
           - machine: glymur-crd
             distro:
                 name: qcom-distro
+            kernel:
+                type: default
+          - machine: glymur-crd
+            distro:
+                name: qcom-distro-catchall
             kernel:
                 type: default
           - machine: qcom-armv8a
@@ -212,9 +251,19 @@ jobs:
                 name: qcom-distro
             kernel:
                 type: default
+          - machine: qcom-armv8a
+            distro:
+                name: qcom-distro-catchall
+            kernel:
+                type: default
           - machine: rb3gen2-core-kit
             distro:
                 name: qcom-distro
+            kernel:
+                type: default
+          - machine: rb3gen2-core-kit
+            distro:
+                name: qcom-distro-catchall
             kernel:
                 type: default
         include:
@@ -319,7 +368,7 @@ jobs:
       profile: ${{ inputs.profile }}
 
   publish_summary:
-    needs: [compile, compile_sdk]
+    needs: [compile_stage3, compile_sdk]
     if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
     permissions:
       contents: read
@@ -333,12 +382,12 @@ jobs:
 
   build_successful:
     if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
-    needs: [compile, compile_sdk]
+    needs: [compile_stage3, compile_sdk]
     runs-on: ubuntu-latest
     steps:
       - name: Build completed successfully
         env:
-          COMPILE_RESULT: ${{ needs.compile.result }}
+          COMPILE_RESULT: ${{ needs.compile_stage3.result }}
           COMPILE_SDK_RESULT: ${{ needs.compile_sdk.result }}
         run: |
           if [ "${COMPILE_RESULT}" != "success" ] || [ "${COMPILE_SDK_RESULT}" != "success" ]; then
