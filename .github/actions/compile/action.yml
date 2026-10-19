@@ -46,12 +46,25 @@ runs:
         # use a single shared sstate cache folder, cleaned up by mtime
         echo "sstate_dir=${INPUTS_CACHE_DIR}/sstate-cache" >> $GITHUB_OUTPUT
         echo "kas_work_dir=${PWD}/../kas" >> $GITHUB_OUTPUT
-        echo "kas_yamls=ci/ci.yml:ci/${INPUTS_MACHINE}.yml${INPUTS_DISTRO_YAML}${INPUTS_KERNEL_YAML}" >> $GITHUB_OUTPUT
+        echo "kas_yamls=ci/ci.yml:ci/${INPUTS_MACHINE}.yml${INPUTS_DISTRO_YAML}${INPUTS_KERNEL_YAML}:ci/build-id.yml" >> $GITHUB_OUTPUT
+        # kas-container does not forward arbitrary env vars into the
+        # container, so bake the CI run id into a kas fragment inside the
+        # mounted checkout. This overrides the local default set in
+        # meta-qcom's ci/base.yml so the image's /etc/os-release maps back to
+        # the run (and to the S3 artifact folder named ${run_id}-${run_attempt}).
+        cat > ci/build-id.yml <<EOF
+        header:
+          version: 14
+        local_conf_header:
+          build-id: |
+            BUILD_ID = "${BUILD_ID}"
+        EOF
       env:
         INPUTS_CACHE_DIR: ${{inputs.cache_dir}}
         INPUTS_MACHINE: ${{ inputs.machine }}
         INPUTS_DISTRO_YAML: ${{ inputs.distro_yaml }}
         INPUTS_KERNEL_YAML: ${{ inputs.kernel_yaml }}
+        BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Dump kas-build yaml
       shell: bash
