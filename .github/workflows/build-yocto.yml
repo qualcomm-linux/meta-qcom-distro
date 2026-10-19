@@ -121,6 +121,13 @@ jobs:
     uses: $/.github/workflows/compile.yml
     with:
       name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
+      # One world build per machine and distro family is enough for compile
+      # coverage: qcom-distro-catchall is qcom-distro with selinux and sota
+      # added (sota only opts out ptest), so the remaining distro and kernel
+      # combinations only repeat already-covered world builds. qcom-armv7a has no
+      # qcom-distro-catchall variant, so its qcom-distro build is the
+      # distro-family world build for that machine.
+      world: ${{ (matrix.distro.name == 'qcom-distro-catchall' || (matrix.machine == 'qcom-armv7a' && matrix.distro.name == 'qcom-distro')) && matrix.kernel.type == 'default' }}
       machine: ${{matrix.machine}}
       distro_yaml: ${{matrix.distro.yamlfile}}
       distro_name: ${{matrix.distro.name}}
@@ -296,6 +303,13 @@ jobs:
       # and nightly) < weekly. Add "profile: weekly" to the distro entry of a
       # target that is too expensive to build every night.
       enabled: ${{ (matrix.distro.profile || 'any') == 'any' || (matrix.distro.profile == 'full' && inputs.profile != 'pr') || (matrix.distro.profile == 'weekly' && inputs.profile == 'weekly') }}
+      # One world build per machine and distro family is enough for compile
+      # coverage: qcom-distro-catchall is qcom-distro with selinux and sota
+      # added (sota only opts out ptest), so the remaining distro and kernel
+      # combinations only repeat already-covered world builds. qcom-armv7a has no
+      # qcom-distro-catchall variant, so its qcom-distro build is the
+      # distro-family world build for that machine.
+      world: ${{ (matrix.distro.name == 'qcom-distro-catchall' || (matrix.machine == 'qcom-armv7a' && matrix.distro.name == 'qcom-distro')) && matrix.kernel.type == 'default' }}
       machine: ${{matrix.machine}}
       distro_yaml: ${{matrix.distro.yamlfile}}
       distro_name: ${{matrix.distro.name}}
