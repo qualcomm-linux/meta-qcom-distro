@@ -68,6 +68,7 @@ RDEPENDS:${PN}-network-utils = " \
     smbclient \
     tcpdump \
     wowlan-udev \
+    dhcpcd \
     "
 
 RDEPENDS:${PN}-profile-utils = " \
