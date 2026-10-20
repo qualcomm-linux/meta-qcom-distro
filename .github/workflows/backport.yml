@@ -18,7 +18,8 @@ jobs:
       github.event.pull_request.merged == true &&
       github.event.pull_request.base.ref == 'main'
     steps:
-      - uses: actions/checkout@v6
+      # backport-action pushes the backport branch with these credentials
+      - uses: actions/checkout@v6 # zizmor: ignore[artipacked]
       - name: Create backport pull requests
         uses: korthout/backport-action@7c3f6cd5843cac11bc59a04a1b7699af93261670 # 4.5.0
         with:
