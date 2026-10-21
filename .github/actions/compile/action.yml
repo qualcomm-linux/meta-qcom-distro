@@ -12,6 +12,9 @@ inputs:
     required: true
   cache_dir:
     required: true
+  profile:
+    required: false
+    default: "full" # values: pr | full | weekly
 runs:
   using: "composite"
   steps:
@@ -43,12 +46,25 @@ runs:
         # use a single shared sstate cache folder, cleaned up by mtime
         echo "sstate_dir=${INPUTS_CACHE_DIR}/sstate-cache" >> $GITHUB_OUTPUT
         echo "kas_work_dir=${PWD}/../kas" >> $GITHUB_OUTPUT
-        echo "kas_yamls=ci/ci.yml:ci/${INPUTS_MACHINE}.yml${INPUTS_DISTRO_YAML}${INPUTS_KERNEL_YAML}" >> $GITHUB_OUTPUT
+        echo "kas_yamls=ci/ci.yml:ci/${INPUTS_MACHINE}.yml${INPUTS_DISTRO_YAML}${INPUTS_KERNEL_YAML}:ci/build-id.yml" >> $GITHUB_OUTPUT
+        # kas-container does not forward arbitrary env vars into the
+        # container, so bake the CI run id into a kas fragment inside the
+        # mounted checkout. This overrides the local default set in
+        # meta-qcom's ci/base.yml so the image's /etc/os-release maps back to
+        # the run (and to the S3 artifact folder named ${run_id}-${run_attempt}).
+        cat > ci/build-id.yml <<EOF
+        header:
+          version: 14
+        local_conf_header:
+          build-id: |
+            BUILD_ID = "${BUILD_ID}"
+        EOF
       env:
         INPUTS_CACHE_DIR: ${{inputs.cache_dir}}
         INPUTS_MACHINE: ${{ inputs.machine }}
         INPUTS_DISTRO_YAML: ${{ inputs.distro_yaml }}
         INPUTS_KERNEL_YAML: ${{ inputs.kernel_yaml }}
+        BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Dump kas-build yaml
       shell: bash
@@ -112,33 +128,81 @@ runs:
     - name: Stage build artifacts for publishing
       shell: bash
       run: |
+        set -x
         # The upload-private-artifact-action runs from a container that
         # expects file to be relative to our PWD. deploy_dir is outside
         # that, so we move things around:
-        deploy_dir=../kas/build/tmp/deploy/images/${INPUTS_MACHINE}
+        deploy_dir=../kas/build/tmp/deploy
+        images_dir=$deploy_dir/images/${INPUTS_MACHINE}
+        sdk_dir=$deploy_dir/sdk
         uploads_dir=./uploads/${INPUTS_DISTRO_NAME}${INPUTS_KERNEL_DIRNAME}/${INPUTS_MACHINE}
         mkdir -p $uploads_dir
-        # Publish everything that is linked by bitbake at the end of the build (avoid timestamp and duplication)
-        find $deploy_dir/ -maxdepth 1 -type l -exec cp --dereference {} $uploads_dir/ \;
-        # Files without links: *.vfat, *.elf, *.efi, efi.stub, fit *.its, qcom-metadata.dtb and qclinuxfitImage
-        # Copy *.efi, *.efi and *.vfat as they are useful for debugging
-        find $deploy_dir/ -maxdepth 1 -type f \( -name \*.efi -o -name \*.elf -o -name dtb-\*.vfat \) -exec cp {} $uploads_dir/ \;
-        cp buildstats* kas-build.yml $uploads_dir/
-        if [ -d $deploy_dir/../../sdk ]; then
-          cp $deploy_dir/../../sdk/* $uploads_dir/
+        if [ -d $images_dir ]; then
+          # Skip symlink names whose content is also published under another
+          # name: the versioned '*--<version>*' links duplicate the
+          # machine-suffixed ones, and the '<type>-<machine>.bin' kernel
+          # links duplicate Image, Image.gz, zImage and vmlinux.
+          exclude=( ! -name '*--*' ! -name 'vmlinux-*.bin' ! -name 'Image-*.bin' ! -name 'Image.gz-*.bin' ! -name 'zImage-*.bin' )
+          # The qcomflash tarball already ships the rootfs (rootfs.img), the
+          # ESP (efi.bin) and vmlinux, so skip their standalone copies when
+          # the tarball is published (uncompress or extract them if needed)
+          if compgen -G "$images_dir/*.qcomflash.tar.gz" > /dev/null; then
+            exclude+=( ! -name '*.rootfs.ext4' ! -name '*.rootfs.ota-ext4' ! -name '*.rootfs.ota-esp' ! -name 'esp-qcom-image-*.vfat' ! -name 'vmlinux' )
+          fi
+          # The world build deploys the same initramfs images for every
+          # machine, so publish them only from the generic machines
+          case "${INPUTS_MACHINE}" in
+            qcom-armv8a|qcom-armv7a) ;;
+            *) exclude+=( ! -name 'initramfs-firmware-*' ! -name 'initramfs-test*' ! -name 'initramfs-kerneltest*' ! -name 'initramfs-tiny*' ) ;;
+          esac
+          # Publish everything that is linked by bitbake at the end of the build (avoid timestamp and duplication)
+          find $images_dir/ -maxdepth 1 -type l "${exclude[@]}" -exec cp -v --dereference {} $uploads_dir/ \;
+          # Files without links: *.vfat, *.elf, *.efi, efi.stub, fit *.its, qcom-metadata.dtb and qclinuxfitImage
+          # Copy *.efi, *.efi and *.vfat as they are useful for debugging
+          find $images_dir/ -maxdepth 1 -type f \( -name \*.efi -o -name \*.elf -o -name dtb-\*.vfat \) -exec cp -v {} $uploads_dir/ \;
+        fi
+        cp -v buildstats* kas-build.yml $uploads_dir/
+        if [ -d $sdk_dir ]; then
+          cp -v $sdk_dir/* $uploads_dir/
         fi
       env:
         INPUTS_MACHINE: ${{ inputs.machine }}
         INPUTS_DISTRO_NAME: ${{ inputs.distro_name }}
         INPUTS_KERNEL_DIRNAME: ${{ inputs.kernel_dirname }}
 
+    - name: Set S3 object tag
+      shell: bash
+      run: |
+        if [[ "$GITHUB_EVENT_NAME" = "pull_request" ]]; then
+          echo "OBJECT_TAG=retention=7d" >> $GITHUB_ENV
+          echo "BUILD_TYPE=buildType=PR" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_NAME" = "push" ]]; then
+          echo "OBJECT_TAG=retention=15d" >> $GITHUB_ENV
+          echo "BUILD_TYPE=buildType=PUSH" >> $GITHUB_ENV
+        elif [[ "${INPUTS_PROFILE}" = "weekly" ]]; then
+          echo "OBJECT_TAG=retention=15d" >> $GITHUB_ENV
+          echo "BUILD_TYPE=buildType=WEEKLY" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_NAME" = "schedule" ]]; then
+          # the nightly build is the schedule trigger of build-yocto.yml
+          echo "OBJECT_TAG=retention=15d" >> $GITHUB_ENV
+          echo "BUILD_TYPE=buildType=NIGHTLY" >> $GITHUB_ENV
+        else
+          echo "OBJECT_TAG=retention=15d" >> $GITHUB_ENV
+          echo "BUILD_TYPE=buildType=OTHER" >> $GITHUB_ENV
+        fi
+      env:
+        INPUTS_PROFILE: ${{ inputs.profile }}
+
     - name: Upload artifacts to S3 bucket
-      uses: qualcomm-linux/upload-private-artifact-action@aws-v4
+      uses: qualcomm-linux/upload-private-artifact-action@aws-v5
       id: upload_s3_artifacts
       with:
         path: ./uploads
         destination: ${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ github.run_id }}-${{ github.run_attempt }}/
         s3_bucket: qcom-prd-gh-artifacts
+        object_tag: ${{ env.OBJECT_TAG }}
+        build_type: ${{ env.BUILD_TYPE }}
+        build_branch: "branch=${{ github.base_ref || github.ref_name }}"
 
     - name: "Print output"
       shell: bash

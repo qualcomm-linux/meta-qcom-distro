@@ -106,6 +106,7 @@ jobs:
       packages: read
       actions: read
     runs-on: [self-hosted, qcom-u2404, amd64]
+    timeout-minutes: 480
     strategy:
       fail-fast: true
       matrix:
@@ -135,6 +136,7 @@ jobs:
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
           cache_dir: ${{env.CACHE_DIR}}
+          profile: ${{ inputs.profile }}
 
   compile:
     needs: compile_warm_up
@@ -144,6 +146,7 @@ jobs:
       packages: read
       actions: read
     runs-on: [self-hosted, qcom-u2404, amd64]
+    timeout-minutes: 480
     outputs:
       url: ${{ steps.compile_kas.outputs.url }}
     strategy:
@@ -170,7 +173,7 @@ jobs:
           - name: qcom-distro-catchall
             yamlfile: ':ci/qcom-distro-catchall.yml'
           - name: performance
-            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml'
+            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml:ci/nospdx.yml'
         kernel:
           - type: default
             dirname: ""
@@ -294,6 +297,7 @@ jobs:
           kernel_yaml: ${{matrix.kernel.yamlfile}}
           kernel_dirname: ${{matrix.kernel.dirname}}
           cache_dir: ${{env.CACHE_DIR}}
+          profile: ${{ inputs.profile }}
 
   publish_summary:
     needs: compile
