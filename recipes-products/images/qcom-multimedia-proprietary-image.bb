@@ -20,6 +20,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     kgsl-dlkm \
     libdiag-bin \
     onnxruntime-qnn \
+    packagegroup-qcom-quickboot-tests \
     qcom-adreno \
     qcom-sensors-binaries \
     quickboot-camera-camx \
