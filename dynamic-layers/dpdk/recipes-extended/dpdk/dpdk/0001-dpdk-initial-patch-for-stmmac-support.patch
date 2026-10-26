@@ -1,0 +1,2397 @@
+From aca105e7f78411e6a1c77bcb5801d51269674969 Mon Sep 17 00:00:00 2001
+From: Kiran Patchala <pkiran@qti.qualcomm.com>
+Date: Wed, 23 Sep 2026 18:24:52 +0530
+Subject: [PATCH] dpdk: initial patch for stmmac support
+
+stmmac driver changes for dpdk
+
+Upstream-Status: Inappropriate [Qualcomm-specific platform driver, not intended for upstream DPDK]
+---
+ drivers/net/meson.build            |    1 +
+ drivers/net/stmmac/meson.build     |   15 +
+ drivers/net/stmmac/stmmac.h        |  100 ++
+ drivers/net/stmmac/stmmac_ethdev.c | 1382 ++++++++++++++++++++++++++++
+ drivers/net/stmmac/stmmac_logs.h   |   25 +
+ drivers/net/stmmac/stmmac_regs.h   |  352 +++++++
+ drivers/net/stmmac/stmmac_rxtx.c   |  449 +++++++
+ 7 files changed, 2324 insertions(+)
+ create mode 100644 drivers/net/stmmac/meson.build
+ create mode 100644 drivers/net/stmmac/stmmac.h
+ create mode 100644 drivers/net/stmmac/stmmac_ethdev.c
+ create mode 100644 drivers/net/stmmac/stmmac_logs.h
+ create mode 100644 drivers/net/stmmac/stmmac_regs.h
+ create mode 100644 drivers/net/stmmac/stmmac_rxtx.c
+
+diff --git a/drivers/net/meson.build b/drivers/net/meson.build
+index c7dae4ad27..25722829ac 100644
+--- a/drivers/net/meson.build
++++ b/drivers/net/meson.build
+@@ -58,6 +58,7 @@ drivers = [
+         'rnp',
+         'sfc',
+         'softnic',
++        'stmmac',
+         'tap',
+         'thunderx',
+         'txgbe',
+diff --git a/drivers/net/stmmac/meson.build b/drivers/net/stmmac/meson.build
+new file mode 100644
+index 0000000000..fb3ed0e162
+--- /dev/null
++++ b/drivers/net/stmmac/meson.build
+@@ -0,0 +1,15 @@
++# SPDX-License-Identifier: BSD-3-Clause
++# Copyright 2026 Qualcomm Technologies, Inc.
++
++if not is_linux
++    build = false
++    reason = 'only supported on linux'
++    subdir_done()
++endif
++
++deps += ['bus_platform']
++
++sources = files(
++        'stmmac_ethdev.c',
++        'stmmac_rxtx.c',
++)
+diff --git a/drivers/net/stmmac/stmmac.h b/drivers/net/stmmac/stmmac.h
+new file mode 100644
+index 0000000000..7fb1556e4d
+--- /dev/null
++++ b/drivers/net/stmmac/stmmac.h
+@@ -0,0 +1,100 @@
++/* SPDX-License-Identifier: BSD-3-Clause
++ * Copyright 2026 Qualcomm Technologies, Inc.
++ */
++
++#ifndef _STMMAC_H_
++#define _STMMAC_H_
++
++#include <stdint.h>
++
++#include <rte_ether.h>
++#include <rte_ethdev.h>
++#include <rte_mempool.h>
++#include <rte_mbuf.h>
++
++#include "stmmac_regs.h"
++
++/*
++ * Phase 1 scope: single TX queue / single RX queue (DMA channel 0
++ * only), polling-mode only (no IRQ support exists in
++ * drivers/bus/platform yet), no RGMII/DLL bring-up, no vendor PHY
++ * init. See plan notes in stmmac_ethdev.c for the full rationale.
++ */
++#define STMMAC_MAX_Q			1
++
++#define STMMAC_DEFAULT_RING_SIZE	256
++
++/* Descriptor overlay: kept as raw 32-bit words (des[0..3]) rather
++ * than C bitfields, matching how the kernel driver itself interprets
++ * the GMAC4 "normal" descriptor (see dwmac4_descs.c) -- fields are
++ * read/written via the macros in stmmac_regs.h, not struct members.
++ */
++struct stmmac_desc {
++	uint32_t des[4];
++};
++
++struct stmmac_tx_queue {
++	struct stmmac_desc	*tx_ring;
++	uint64_t		tx_ring_iova;
++	struct rte_mbuf		**sw_ring;
++	uint16_t		nb_desc;
++	uint16_t		tx_tail;	/* next desc to fill */
++	uint16_t		tx_free;	/* next desc to reclaim from */
++	uint16_t		queue_id;
++	uint16_t		port_id;
++	void			*chan_base;	/* mac_base + DMA chan(0) offset */
++	const struct rte_memzone *mz;
++	uint64_t		tx_packets;	/* per-queue SW stats */
++	uint64_t		tx_bytes;
++	uint64_t		tx_errors;	/* TDES3 ES seen on reclaim */
++	uint64_t		tx_ring_full;	/* burst stopped: slot still OWN=1 */
++};
++
++struct stmmac_rx_queue {
++	struct stmmac_desc	*rx_ring;
++	uint64_t		rx_ring_iova;
++	struct rte_mbuf		**sw_ring;
++	uint16_t		nb_desc;
++	uint16_t		rx_tail;	/* next desc to check/refill */
++	uint16_t		queue_id;
++	uint16_t		port_id;
++	struct rte_mempool	*mb_pool;
++	void			*chan_base;	/* mac_base + DMA chan(0) offset */
++	const struct rte_memzone *mz;
++	uint64_t		rx_packets;	/* per-queue SW stats */
++	uint64_t		rx_bytes;
++	uint64_t		rx_errors;
++	uint64_t		rx_nombuf;
++};
++
++struct stmmac_priv {
++	void			*mac_base;	/* resource[0]: MAC/MTL/DMA block */
++	void			*rgmii_base;	/* resource[1]: Qualcomm RGMII IO macro (NULL if absent) */
++	struct stmmac_chan_addrs chan_addrs;	/* resolved DMA/MTL stride */
++
++	struct stmmac_tx_queue	*txq[STMMAC_MAX_Q];
++	struct stmmac_rx_queue	*rxq[STMMAC_MAX_Q];
++
++	struct rte_ether_addr	mac_addr;
++
++	uint16_t		mdio_addr;	/* PHY MDIO address, from devarg */
++	int			has_emac_ge_3;	/* experimental stride override */
++
++	int			link_up;
++	uint32_t		link_speed;
++
++	struct rte_eth_stats	stats;
++};
++
++/* stmmac_rxtx.c */
++uint16_t stmmac_rx_pkt_burst(void *rxq, struct rte_mbuf **rx_pkts,
++			      uint16_t nb_pkts);
++uint16_t stmmac_tx_pkt_burst(void *txq, struct rte_mbuf **tx_pkts,
++			      uint16_t nb_pkts);
++
++uint16_t stmmac_mdio_read(void *mac_base, uint16_t mdio_addr,
++			   uint16_t phyreg);
++void stmmac_mdio_write(void *mac_base, uint16_t mdio_addr,
++			uint16_t phyreg, uint16_t phydata);//need to check - usecase --MD---
++
++#endif /* _STMMAC_H_ */
+diff --git a/drivers/net/stmmac/stmmac_ethdev.c b/drivers/net/stmmac/stmmac_ethdev.c
+new file mode 100644
+index 0000000000..32b4a0b405
+--- /dev/null
++++ b/drivers/net/stmmac/stmmac_ethdev.c
+@@ -0,0 +1,1382 @@
++/* SPDX-License-Identifier: BSD-3-Clause
++ * Copyright 2026 Qualcomm Technologies, Inc.
++ *
++ * DPDK PMD for the Synopsys DWC EQoS GMAC4 ("stmmac"/"dwmac4") core.
++ *
++ * Phase 1 scope (see repo notes / plan for full rationale):
++ *   - Single DMA channel (channel 0), single TX + single RX queue.
++ *   - Polling-mode only: drivers/bus/platform has no IRQ/rte_intr_*
++ *     support at all, so there is no MSI/eventfd data path or link
++ *     IRQ here -- TX/RX completion and link state are all polled.
++ *   - Generic dwmac4 register stride by default; the real Qualcomm
++ *     has_emac_ge_3 0x1000-stride override is available via the
++ *     "has_emac_ge_3" devarg but is EXPERIMENTAL / untested against
++ *     silicon.//---MD--
++ *   - No RGMII/SDCC DLL bring-up (ethqos_configure_rgmii() and
++ *     friends in dwmac-qcom-ethqos.c are SoC-PoR-table specific and
++ *     out of scope). On real Qualcomm RGMII silicon the DLL will
++ *     likely not train without this -- documented gap, not silently
++ *     omitted.
++ *   - No vendor-specific PHY driver: only generic IEEE 802.3
++ *     clause-22 MDIO (BMSR) link-up polling.
++ *   - No multi-queue, no TSO, no PTP/timestamping, no secondary
++ *     process support.
++ */
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#include <bus_platform_driver.h>
++#include <ethdev_driver.h>
++#include <rte_common.h>
++#include <rte_alarm.h>
++#include <rte_cycles.h>
++#include <rte_ethdev.h>
++#include <rte_io.h>
++#include <rte_kvargs.h>
++#include <rte_malloc.h>
++
++#include "stmmac.h"
++#include "stmmac_regs.h"
++#include "stmmac_logs.h"
++
++RTE_LOG_REGISTER_DEFAULT(stmmac_logtype_pmd, NOTICE);
++
++#define STMMAC_MD_LOG(fmt, ...) \
++	fprintf(stderr, "--MD-- %s:%d " fmt "\n", __func__, __LINE__, ##__VA_ARGS__)
++
++#define STMMAC_DRIVER_NAME		net_stmmac
++
++#define STMMAC_DEVARG_HAS_EMAC_GE_3	"has_emac_ge_3"
++#define STMMAC_DEVARG_MDIO_ADDR		"mdio_addr"
++
++static const char * const stmmac_valid_args[] = {
++	STMMAC_DEVARG_HAS_EMAC_GE_3,
++	STMMAC_DEVARG_MDIO_ADDR,
++	NULL,
++};
++
++static uint64_t dev_rx_offloads_sup = RTE_ETH_RX_OFFLOAD_IPV4_CKSUM;
++static uint64_t dev_tx_offloads_sup = RTE_ETH_TX_OFFLOAD_IPV4_CKSUM |
++				      RTE_ETH_TX_OFFLOAD_TCP_CKSUM |
++				      RTE_ETH_TX_OFFLOAD_UDP_CKSUM;
++
++static int
++stmmac_kvarg_handler(const char *key, const char *value, void *opaque)
++{
++	unsigned long v;
++	char *end;
++
++	RTE_SET_USED(key);
++
++	v = strtoul(value, &end, 0);
++	if (*end != '\0')
++		return -EINVAL;
++
++	*(uint32_t *)opaque = (uint32_t)v;
++	return 0;
++}
++
++static void
++stmmac_parse_devargs(struct rte_platform_device *pdev, struct stmmac_priv *priv)
++{
++	struct rte_kvargs *kvlist;
++	uint32_t v;
++
++	/* Shikra (shikra_data, dwmac-qcom-ethqos.c:344) is has_emac_ge_3:
++	 * DMA chan @0x8100, MTL chan @0x8000. Default ON; devarg can override.
++	 */
++	priv->has_emac_ge_3 = 1;
++	priv->mdio_addr = 7;	/* Shikra EVK DP83867: ethernet-phy@7 */
++
++	if (pdev->device.devargs == NULL ||
++	    pdev->device.devargs->args == NULL)
++		return;
++
++	kvlist = rte_kvargs_parse(pdev->device.devargs->args,
++				   stmmac_valid_args);
++	if (kvlist == NULL)
++		return;
++
++	if (rte_kvargs_count(kvlist, STMMAC_DEVARG_HAS_EMAC_GE_3) > 0) {
++		v = 0;
++		if (rte_kvargs_process(kvlist, STMMAC_DEVARG_HAS_EMAC_GE_3,
++					stmmac_kvarg_handler, &v) == 0)
++			priv->has_emac_ge_3 = (int)v;
++	}
++
++	if (rte_kvargs_count(kvlist, STMMAC_DEVARG_MDIO_ADDR) > 0) {
++		v = 0;
++		if (rte_kvargs_process(kvlist, STMMAC_DEVARG_MDIO_ADDR,
++					stmmac_kvarg_handler, &v) == 0)
++			priv->mdio_addr = (uint16_t)v;
++	}
++
++	rte_kvargs_free(kvlist);
++}
++
++/* --MD-- debug: local offsets used only by the register dump / start fixes */
++#define MD_RGMII_IO_MACRO_CONFIG	0x00
++#define MD_RGMII_CONFIG_FUNC_CLK_EN	RTE_BIT32(30)	/* dwmac-qcom-ethqos.c:27 */
++#define MD_GMAC_RXQ_CTRL0		0xa0		/* dwmac4.h:24 */
++#define MD_DMA_RBSZ_MASK		(0x3fffu << 1)	/* dwmac4_dma.h:148 */
++#define MD_DMA_RBSZ_SHIFT		1
++#define MD_DMA_RESET_POLL_US		1000
++#define MD_DMA_RESET_POLLS		1000	/* 1 s total, same as dwmac4_dma_reset() */
++
++#define MD_R(base, off)	rte_read32((uint8_t *)(base) + (off))
++#define DMA_STATUS_MD	0x1008	/* DMA_STATUS, dwmac4_dma.h:20 */
++
++static void
++stmmac_md_dump_regs(struct stmmac_priv *priv, const char *tag)
++{
++	uint8_t *b = priv->mac_base;
++	uint32_t dch = stmmac_dma_chan_base(&priv->chan_addrs, 0);
++	uint32_t mch = stmmac_mtl_chan_base(&priv->chan_addrs, 0);
++	unsigned int off;
++
++	fprintf(stderr, "--MD-- ===== REG DUMP [%s] priv=%p mac_base(ioaddr)=%p rgmii_base=%p has_emac_ge_3=%d dma_chan0=0x%x mtl_chan0=0x%x =====\n",
++		tag, priv, priv->mac_base, priv->rgmii_base, priv->has_emac_ge_3, dch, mch);
++	fprintf(stderr, "--MD-- MAC  CONFIG=0x%08x EXT_CFG=0x%08x PFILT=0x%08x RXQ_CTRL0=0x%08x PHYIF=0x%08x VERSION=0x%08x DEBUG=0x%08x\n",
++		MD_R(b, 0x0), MD_R(b, 0x4), MD_R(b, 0x8), MD_R(b, 0xa0),
++		MD_R(b, 0xf8), MD_R(b, 0x110), MD_R(b, 0x114));
++	fprintf(stderr, "--MD-- MAC  HWF0=0x%08x HWF1=0x%08x HWF2=0x%08x HWF3=0x%08x ADDR0_HI=0x%08x ADDR0_LO=0x%08x MDIO_ADDR=0x%08x\n",
++		MD_R(b, 0x11c), MD_R(b, 0x120), MD_R(b, 0x124), MD_R(b, 0x128),
++		MD_R(b, GMAC_ADDR_HIGH(0)), MD_R(b, GMAC_ADDR_LOW(0)),
++		MD_R(b, GMAC_MDIO_ADDR));
++	fprintf(stderr, "--MD-- MTL  OPMODE=0x%08x RXQ_DMA_MAP0=0x%08x TXQ0_OP=0x%08x TXQ0_DBG=0x%08x RXQ0_OP=0x%08x RXQ0_DBG=0x%08x\n",
++		MD_R(b, 0xc00), MD_R(b, 0xc30), MD_R(b, mch), MD_R(b, mch + 0x8),
++		MD_R(b, mch + 0x30), MD_R(b, mch + 0x38));
++	fprintf(stderr, "--MD-- DMA  BUS_MODE=0x%08x SYSBUS=0x%08x STATUS=0x%08x DBG0=0x%08x DBG1=0x%08x DBG2=0x%08x AXI=0x%08x\n",
++		MD_R(b, 0x1000), MD_R(b, 0x1004), MD_R(b, 0x1008), MD_R(b, 0x100c),
++		MD_R(b, 0x1010), MD_R(b, 0x1014), MD_R(b, 0x1028));
++	fprintf(stderr, "--MD-- CH0  CTRL=0x%08x TXCTRL=0x%08x RXCTRL=0x%08x TXBASE_HI=0x%08x TXBASE=0x%08x RXBASE_HI=0x%08x RXBASE=0x%08x\n",
++		MD_R(b, dch), MD_R(b, dch + 0x4), MD_R(b, dch + 0x8),
++		MD_R(b, dch + 0x10), MD_R(b, dch + 0x14), MD_R(b, dch + 0x18),
++		MD_R(b, dch + 0x1c));
++	fprintf(stderr, "--MD-- CH0  TXTAIL=0x%08x RXTAIL=0x%08x TXLEN=0x%08x RXLEN=0x%08x INTEN=0x%08x CURTXD=0x%08x CURRXD=0x%08x CURTXBUF=0x%08x CURRXBUF=0x%08x STATUS=0x%08x\n",
++		MD_R(b, dch + 0x20), MD_R(b, dch + 0x28), MD_R(b, dch + 0x2c),
++		MD_R(b, dch + 0x30), MD_R(b, dch + 0x34), MD_R(b, dch + 0x44),
++		MD_R(b, dch + 0x4c), MD_R(b, dch + 0x54), MD_R(b, dch + 0x5c),
++		MD_R(b, dch + 0x60));
++	if (priv->rgmii_base != NULL) {
++		fprintf(stderr, "--MD-- RGMII");
++		for (off = 0; off <= 0x28; off += 4)
++			fprintf(stderr, " [0x%02x]=0x%08x", off, MD_R(priv->rgmii_base, off));
++		fprintf(stderr, "\n");
++	} else {
++		fprintf(stderr, "--MD-- RGMII region NOT mapped\n");
++	}
++}
++
++/*
++ * MMIO sanity: write a pattern to MAC address-1 low (unused by PMD),
++ * read back, restore. Detects writes not landing (case F).
++ */
++static void
++stmmac_md_mmio_write_test(struct stmmac_priv *priv)
++{
++	void *reg = (uint8_t *)priv->mac_base + GMAC_ADDR_LOW(1);
++	uint32_t orig = rte_read32(reg), rb;
++
++	rte_write32(0xa5a55a5a, reg);
++	rb = rte_read32(reg);
++	rte_write32(orig, reg);
++	fprintf(stderr, "--MD-- MMIO write test GMAC_ADDR_LOW(1): orig=0x%08x wrote=0xa5a55a5a readback=0x%08x -> %s\n",
++		orig, rb, rb == 0xa5a55a5a ? "OK (writes land)" : "FAIL (writes NOT landing)");
++}
++
++/*
++ * Linux ethqos_clks_config()/ethqos_set_func_clk_en() sets
++ * RGMII_IO_MACRO_CONFIG.FUNC_CLK_EN "to prevent DMA reset to timeout
++ * due to lacking PHY clock" (dwmac-qcom-ethqos.c:811-816). Neither the
++ * recovery driver nor the PMD did this before.
++ */
++static void
++stmmac_rgmii_func_clk_en(struct stmmac_priv *priv)
++{
++	void *reg;
++	uint32_t before, after;
++
++	if (priv->rgmii_base == NULL) {
++		STMMAC_MD_LOG("RGMII region not mapped: cannot set FUNC_CLK_EN (DMA reset will likely time out)");
++		return;
++	}
++	reg = (uint8_t *)priv->rgmii_base + MD_RGMII_IO_MACRO_CONFIG;
++	before = rte_read32(reg);
++	rte_write32(before | MD_RGMII_CONFIG_FUNC_CLK_EN, reg);
++	after = rte_read32(reg);
++	STMMAC_MD_LOG("RGMII_IO_MACRO_CONFIG before=0x%08x after=0x%08x FUNC_CLK_EN=%u",
++		      before, after, !!(after & MD_RGMII_CONFIG_FUNC_CLK_EN));
++}
++
++/*
++ * Port of ethqos_configure_rgmii() rgmii-id / SPEED_1000 / has_emac_ge_3 path
++ * (dwmac-qcom-ethqos.c:605-630, ethqos_rgmii_id_macro_init():569-603).
++ * Linux runs this from fix_mac_speed() at link-up; without it the IO macro
++ * stays at POR: CONFIG2.TX_TO_RX_LOOPBACK_EN=1 (RX fed from TX, not the PHY)
++ * and the DLL powered down without DDR_BYPASS (no RX clock into the MAC).
++ * Board phy-mode = "rgmii-id" (PHY adds the 2 ns delays), shikra_data has no POR table.
++ */
++#define MD_SDCC_HC_REG_DLL_CONFIG	0x04
++#define MD_SDCC_USR_CTL			0x18
++#define MD_RGMII_IO_MACRO_CONFIG2	0x1c
++#define MD_DLL_CONFIG_PDN		RTE_BIT32(29)
++#define MD_USR_CTL_DDR_BYPASS		RTE_BIT32(30)
++#define MD_RGMII_CFG_POS_NEG_DATA_SEL	RTE_BIT32(23)
++#define MD_RGMII_CFG_BYPASS_TX_ID_EN	RTE_BIT32(3)
++#define MD_RGMII_CFG_LOOPBACK_EN	RTE_BIT32(2)
++#define MD_RGMII_CFG_PROG_SWAP		RTE_BIT32(1)
++#define MD_RGMII_CFG_DDR_MODE		RTE_BIT32(0)
++#define MD_RGMII_CFG2_RSVD_CONFIG15	(0x7fffu << 17)
++#define MD_RGMII_CFG2_TX_TO_RX_LOOPBACK	RTE_BIT32(13)
++#define MD_RGMII_CFG2_RX_PROG_SWAP	RTE_BIT32(7)
++#define MD_RGMII_CFG2_DATA_DIV_CLK_SEL	RTE_BIT32(6)
++#define MD_RGMII_CFG2_TX_PHASE_SHIFT_EN	RTE_BIT32(5)
++
++static void
++md_rgmii_rmw(struct stmmac_priv *priv, uint32_t off, uint32_t clr, uint32_t set)
++{
++	void *reg = (uint8_t *)priv->rgmii_base + off;
++
++	rte_write32((rte_read32(reg) & ~clr) | set, reg);
++}
++
++static void
++stmmac_rgmii_id_1g_init(struct stmmac_priv *priv)
++{
++	if (priv->rgmii_base == NULL) {
++		STMMAC_MD_LOG("RGMII region not mapped, skipping IO macro init");
++		return;
++	}
++	STMMAC_MD_LOG("RGMII before: CFG=0x%08x DLL=0x%08x USR_CTL=0x%08x CFG2=0x%08x",
++		      MD_R(priv->rgmii_base, MD_RGMII_IO_MACRO_CONFIG),
++		      MD_R(priv->rgmii_base, MD_SDCC_HC_REG_DLL_CONFIG),
++		      MD_R(priv->rgmii_base, MD_SDCC_USR_CTL),
++		      MD_R(priv->rgmii_base, MD_RGMII_IO_MACRO_CONFIG2));
++
++	/* PHY adds the delays: DLL powered down, DDR path bypassed */
++	md_rgmii_rmw(priv, MD_SDCC_HC_REG_DLL_CONFIG, 0, MD_DLL_CONFIG_PDN);
++	md_rgmii_rmw(priv, MD_SDCC_USR_CTL, 0, MD_USR_CTL_DDR_BYPASS);
++
++	/* ethqos_rgmii_id_macro_init(SPEED_1000), has_emac_ge_3 */
++	md_rgmii_rmw(priv, MD_RGMII_IO_MACRO_CONFIG2, MD_RGMII_CFG2_TX_TO_RX_LOOPBACK, 0);
++	md_rgmii_rmw(priv, MD_RGMII_IO_MACRO_CONFIG,
++		     MD_RGMII_CFG_POS_NEG_DATA_SEL | MD_RGMII_CFG_PROG_SWAP |
++		     MD_RGMII_CFG_LOOPBACK_EN,
++		     MD_RGMII_CFG_DDR_MODE | MD_RGMII_CFG_BYPASS_TX_ID_EN);
++	md_rgmii_rmw(priv, MD_RGMII_IO_MACRO_CONFIG2,
++		     MD_RGMII_CFG2_DATA_DIV_CLK_SEL | MD_RGMII_CFG2_TX_PHASE_SHIFT_EN |
++		     MD_RGMII_CFG2_RSVD_CONFIG15,
++		     MD_RGMII_CFG2_RX_PROG_SWAP);
++
++	STMMAC_MD_LOG("RGMII after : CFG=0x%08x DLL=0x%08x USR_CTL=0x%08x CFG2=0x%08x (expect CFG=0x40401349 DLL bit29=1 USR_CTL=0x40010800 CFG2=0x00000080)",
++		      MD_R(priv->rgmii_base, MD_RGMII_IO_MACRO_CONFIG),
++		      MD_R(priv->rgmii_base, MD_SDCC_HC_REG_DLL_CONFIG),
++		      MD_R(priv->rgmii_base, MD_SDCC_USR_CTL),
++		      MD_R(priv->rgmii_base, MD_RGMII_IO_MACRO_CONFIG2));
++}
++
++/*
++ * DP83867 RGMII internal delays. Linux dp83867_config_init() (dp83867.c:768-809)
++ * programs these for phy-mode "rgmii-id" with DT ti,{rx,tx}-internal-delay =
++ * DP83867_RGMIIDCTL_2_00_NS. The recovery driver hard-resets the PHY via GPIO
++ * and the Linux PHY driver is unbound, so the PHY runs at strap defaults. The
++ * MAC side is in bypass (no delay) for rgmii-id, so without PHY delays every
++ * RX frame is sampled off-eye and fails CRC.
++ * MMD access via clause-22 REGCR(0x0d)/ADDAR(0x0e) indirect registers.
++ */
++#define MD_MII_REGCR			0x0d
++#define MD_MII_PHYSID1			0x02
++#define MD_MII_PHYSID2			0x03
++#define MD_MII_ADDAR			0x0e
++#define MD_REGCR_ADDR			0x001f	/* function=address, devad=0x1f */
++#define MD_REGCR_DATA			0x401f	/* function=data no post-inc, devad=0x1f */
++#define MD_DP83867_RGMIICTL		0x0032
++#define MD_DP83867_RGMIIDCTL		0x0086
++#define MD_DP83867_RGMII_TX_CLK_DELAY_EN	RTE_BIT32(1)
++#define MD_DP83867_RGMII_RX_CLK_DELAY_EN	RTE_BIT32(0)
++#define MD_DP83867_RGMIIDCTL_2_00_NS	0x7
++#define MD_DP83867_PHYCTRL		0x10
++#define MD_DP83867_PHYSTS		0x11
++
++static uint16_t
++md_phy_mmd_read(struct stmmac_priv *priv, uint16_t reg)
++{
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_REGCR, MD_REGCR_ADDR);
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_ADDAR, reg);
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_REGCR, MD_REGCR_DATA);
++	return stmmac_mdio_read(priv->mac_base, priv->mdio_addr, MD_MII_ADDAR);
++}
++
++static void
++md_phy_mmd_write(struct stmmac_priv *priv, uint16_t reg, uint16_t val)
++{
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_REGCR, MD_REGCR_ADDR);
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_ADDAR, reg);
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_REGCR, MD_REGCR_DATA);
++	stmmac_mdio_write(priv->mac_base, priv->mdio_addr, MD_MII_ADDAR, val);
++}
++
++static void
++stmmac_phy_rgmii_id_init(struct stmmac_priv *priv)
++{
++	uint16_t id1, id2, ctl, dctl;
++
++	id1 = stmmac_mdio_read(priv->mac_base, priv->mdio_addr, MD_MII_PHYSID1);
++	id2 = stmmac_mdio_read(priv->mac_base, priv->mdio_addr, MD_MII_PHYSID2);
++	STMMAC_MD_LOG("PHY addr=%u ID=0x%04x%04x (expect 0x2000a231 DP83867)",
++		      priv->mdio_addr, id1, id2);
++	if (id1 == 0xffff || id2 == 0xffff) {
++		STMMAC_MD_LOG("PHY not responding on MDIO, skipping delay setup");
++		return;
++	}
++
++	ctl = md_phy_mmd_read(priv, MD_DP83867_RGMIICTL);
++	dctl = md_phy_mmd_read(priv, MD_DP83867_RGMIIDCTL);
++	STMMAC_MD_LOG("PHY before: RGMIICTL(0x32)=0x%04x RGMIIDCTL(0x86)=0x%04x PHYCTRL(0x10)=0x%04x PHYSTS(0x11)=0x%04x",
++		      ctl, dctl,
++		      stmmac_mdio_read(priv->mac_base, priv->mdio_addr, MD_DP83867_PHYCTRL),
++		      stmmac_mdio_read(priv->mac_base, priv->mdio_addr, MD_DP83867_PHYSTS));
++
++	md_phy_mmd_write(priv, MD_DP83867_RGMIICTL,
++			 ctl | MD_DP83867_RGMII_TX_CLK_DELAY_EN |
++			 MD_DP83867_RGMII_RX_CLK_DELAY_EN);
++	md_phy_mmd_write(priv, MD_DP83867_RGMIIDCTL,
++			 MD_DP83867_RGMIIDCTL_2_00_NS |
++			 (MD_DP83867_RGMIIDCTL_2_00_NS << 4));
++
++	STMMAC_MD_LOG("PHY after : RGMIICTL(0x32)=0x%04x (expect bits1:0 set) RGMIIDCTL(0x86)=0x%04x (expect 0x0077) PHYSTS(0x11)=0x%04x",
++		      md_phy_mmd_read(priv, MD_DP83867_RGMIICTL),
++		      md_phy_mmd_read(priv, MD_DP83867_RGMIIDCTL),
++		      stmmac_mdio_read(priv->mac_base, priv->mdio_addr, MD_DP83867_PHYSTS));
++}
++
++/*
++ * DMA soft-reset: dwmac4_dma_reset(), dwmac4_lib.c:16-27.
++ * Linux polls 10 ms x 100 = 1 s; the previous 1 ms bound was too short.
++ */
++static int
++stmmac_dma_reset(void *mac_base)
++{
++	void *reg = (uint8_t *)mac_base + DMA_BUS_MODE;
++	unsigned int i;
++	uint32_t before, wr, val = 0;
++
++	before = rte_read32(reg);
++	wr = before | DMA_BUS_MODE_SFT_RESET;
++	STMMAC_MD_LOG("DMA_BUS_MODE before=0x%08x writing=0x%08x (reg=%p)", before, wr, reg);
++	rte_write32(wr, reg);
++	val = rte_read32(reg);
++	STMMAC_MD_LOG("DMA_BUS_MODE immediately after write=0x%08x SWR=%u",
++		      val, val & DMA_BUS_MODE_SFT_RESET);
++
++	for (i = 0; i < MD_DMA_RESET_POLLS; i++) {
++		val = rte_read32(reg);
++		if (i < 10 || (i % 100) == 0)
++			STMMAC_MD_LOG("poll[%u] t=%u us DMA_BUS_MODE=0x%08x SWR=%u",
++				      i, i * MD_DMA_RESET_POLL_US, val,
++				      val & DMA_BUS_MODE_SFT_RESET);
++		if (!(val & DMA_BUS_MODE_SFT_RESET)) {
++			STMMAC_MD_LOG("DMA reset DONE after %u polls (~%u us) DMA_BUS_MODE=0x%08x",
++				      i, i * MD_DMA_RESET_POLL_US, val);
++			return 0;
++		}
++		rte_delay_us(MD_DMA_RESET_POLL_US);
++	}
++
++	STMMAC_MD_LOG("DMA reset TIMEOUT after %u us, last DMA_BUS_MODE=0x%08x SWR=%u (SWR stuck set: core clock/clk_rx_i missing or block held in reset)",
++		      MD_DMA_RESET_POLLS * MD_DMA_RESET_POLL_US, val,
++		      val & DMA_BUS_MODE_SFT_RESET);
++	return -ETIMEDOUT;
++}
++
++/*
++ * DMA_SYS_BUS_MODE / DMA_AXI_BUS_MODE programming, mirrors
++ * dwmac4_dma_init()/dwmac4_dma_axi() (dwmac4_dma.c:18-70,155-188).
++ * Phase 1 fixed policy: fixed-burst + mixed-burst + AAL enabled,
++ * BLEN16 only, max OSR limits -- no per-platform axi_cfg plumbing.
++ */
++static void
++stmmac_dma_sysbus_init(void *mac_base)
++{
++	void *sysbus_reg = (uint8_t *)mac_base + DMA_SYS_BUS_MODE;
++	void *axi_reg = (uint8_t *)mac_base + DMA_AXI_BUS_MODE;
++	uint32_t value;
++
++	value = rte_read32(sysbus_reg);
++	value |= DMA_SYS_BUS_FB | DMA_SYS_BUS_MB | DMA_SYS_BUS_AAL;
++	/*
++	 * Enhanced Address Mode: Linux sets dma_cfg->eame whenever the DMA
++	 * width is > 32 bits (stmmac_main.c:7573-7578; Shikra host_dma_width=36).
++	 * Our rings/mbufs live at IOVA > 4 GiB (e.g. 0x1_018c4d00). Without
++	 * EAME the DMA ignores RDES1/TDES1 (upper address) and would write
++	 * RX data to the truncated 32-bit address.
++	 */
++	value |= DMA_SYS_BUS_EAME;
++	rte_write32(value, sysbus_reg);
++
++	value = rte_read32(axi_reg);
++	value &= ~(DMA_AXI_WR_OSR_LMT | DMA_AXI_RD_OSR_LMT);
++	value |= (DMA_AXI_OSR_MAX << DMA_AXI_WR_OSR_LMT_SHIFT) &
++		 DMA_AXI_WR_OSR_LMT;
++	value |= (DMA_AXI_OSR_MAX << DMA_AXI_RD_OSR_LMT_SHIFT) &
++		 DMA_AXI_RD_OSR_LMT;
++	value |= DMA_AXI_BLEN16;
++	rte_write32(value, axi_reg);
++}
++
++static int
++stmmac_tx_ring_setup(struct rte_eth_dev *dev, struct stmmac_tx_queue *txq)
++{
++	unsigned int i;
++
++	STMMAC_MD_LOG("txq=%p tx_ring(va)=%p tx_ring_iova=0x%" PRIx64 " nb_desc=%u chan_base=%p sw_ring=%p",
++		      txq, txq->tx_ring, txq->tx_ring_iova, txq->nb_desc,
++		      txq->chan_base, txq->sw_ring);
++
++	for (i = 0; i < txq->nb_desc; i++)
++		memset(&txq->tx_ring[i], 0, sizeof(struct stmmac_desc));
++	/* non-coherent: push zeroed ring to DRAM before DMA sees it */
++	stmmac_dcache_clean(txq->tx_ring,
++			    (size_t)txq->nb_desc * sizeof(struct stmmac_desc));
++
++	/* upper bits of 36-bit IOVA (dwmac4_dma_init_tx_chan, eame) */
++	rte_write32((uint32_t)(txq->tx_ring_iova >> 32),
++		    (uint8_t *)txq->chan_base + 0x10);
++	rte_write32((uint32_t)txq->tx_ring_iova,
++		    (uint8_t *)txq->chan_base + DMA_CHAN_OFF_TX_BASE_ADDR);
++	/* ring length register holds (nb_desc - 1), stmmac_main.c:3177 */
++	rte_write32(txq->nb_desc - 1,
++		    (uint8_t *)txq->chan_base + DMA_CHAN_OFF_TX_RING_LEN);
++	rte_write32((uint32_t)txq->tx_ring_iova,
++		    (uint8_t *)txq->chan_base + DMA_CHAN_OFF_TX_END_ADDR);
++
++	STMMAC_MD_LOG("wrote TXBASE_HI=0x%08x TXBASE=0x%08x TXLEN=%u TXTAIL=0x%08x | readback HI=0x%08x BASE=0x%08x LEN=0x%08x TAIL=0x%08x",
++		      (uint32_t)(txq->tx_ring_iova >> 32), (uint32_t)txq->tx_ring_iova,
++		      txq->nb_desc - 1, (uint32_t)txq->tx_ring_iova,
++		      MD_R(txq->chan_base, 0x10),
++		      MD_R(txq->chan_base, DMA_CHAN_OFF_TX_BASE_ADDR),
++		      MD_R(txq->chan_base, DMA_CHAN_OFF_TX_RING_LEN),
++		      MD_R(txq->chan_base, DMA_CHAN_OFF_TX_END_ADDR));
++
++	RTE_SET_USED(dev);
++	return 0;
++}
++
++static int
++stmmac_rx_ring_setup(struct rte_eth_dev *dev, struct stmmac_rx_queue *rxq)
++{
++	unsigned int i;
++	uint64_t tail;
++	uint32_t bufsz, v;
++	void *rx_ctrl;
++
++	STMMAC_MD_LOG("rxq=%p rx_ring(va)=%p rx_ring_iova=0x%" PRIx64 " nb_desc=%u chan_base=%p sw_ring=%p mb_pool=%p",
++		      rxq, rxq->rx_ring, rxq->rx_ring_iova, rxq->nb_desc,
++		      rxq->chan_base, rxq->sw_ring, rxq->mb_pool);
++
++	for (i = 0; i < rxq->nb_desc; i++) {
++		struct rte_mbuf *mb = rte_pktmbuf_alloc(rxq->mb_pool);
++		uint64_t iova;
++
++		if (mb == NULL) {
++			STMMAC_PMD_ERR("failed to allocate RX mbuf %u", i);
++			STMMAC_MD_LOG("RX mbuf alloc FAILED at %u/%u", i, rxq->nb_desc);
++			return -ENOMEM;
++		}
++
++		iova = rte_pktmbuf_iova(mb);
++		rxq->sw_ring[i] = mb;
++		/* drop any dirty lines over the buffer before DMA writes it */
++		stmmac_dcache_flush(rte_pktmbuf_mtod(mb, void *),
++				    rte_pktmbuf_data_room_size(rxq->mb_pool) -
++				    RTE_PKTMBUF_HEADROOM);
++		rxq->rx_ring[i].des[0] = (uint32_t)iova;
++		rxq->rx_ring[i].des[1] = (uint32_t)(iova >> 32); /* dwmac4_set_addr */
++		rxq->rx_ring[i].des[2] = 0;
++		rxq->rx_ring[i].des[3] = RDES3_OWN | RDES3_BUFFER1_VALID_ADDR |
++					 RDES3_INT_ON_COMPLETION_EN;
++		if (i < 2)
++			STMMAC_MD_LOG("rx desc[%u] mbuf=%p iova=0x%" PRIx64 " des=%08x %08x %08x %08x",
++				      i, mb, iova, rxq->rx_ring[i].des[0],
++				      rxq->rx_ring[i].des[1], rxq->rx_ring[i].des[2],
++				      rxq->rx_ring[i].des[3]);
++	}
++	/* non-coherent: push all OWN=1 descriptors to DRAM before RXTAIL/SR */
++	stmmac_dcache_clean(rxq->rx_ring,
++			    (size_t)rxq->nb_desc * sizeof(struct stmmac_desc));
++
++	/* RX buffer size (dwmac4_set_bfsize); RBSZ must be non-zero and 4-aligned */
++	bufsz = (rte_pktmbuf_data_room_size(rxq->mb_pool) - RTE_PKTMBUF_HEADROOM) & ~3u;
++	rx_ctrl = (uint8_t *)rxq->chan_base + 0x8;
++	v = rte_read32(rx_ctrl);
++	v = (v & ~MD_DMA_RBSZ_MASK) | ((bufsz << MD_DMA_RBSZ_SHIFT) & MD_DMA_RBSZ_MASK);
++	rte_write32(v, rx_ctrl);
++	STMMAC_MD_LOG("RX bufsz=%u RXCTRL wrote=0x%08x readback=0x%08x", bufsz, v, rte_read32(rx_ctrl));
++
++	rte_write32((uint32_t)(rxq->rx_ring_iova >> 32),
++		    (uint8_t *)rxq->chan_base + 0x18);
++	rte_write32((uint32_t)rxq->rx_ring_iova,
++		    (uint8_t *)rxq->chan_base + DMA_CHAN_OFF_RX_BASE_ADDR);
++	/* ring length register holds (nb_desc - 1), stmmac_main.c:3182 */
++	rte_write32(rxq->nb_desc - 1,
++		    (uint8_t *)rxq->chan_base + DMA_CHAN_OFF_RX_RING_LEN);
++	tail = rxq->rx_ring_iova + (uint64_t)rxq->nb_desc * sizeof(struct stmmac_desc);
++	rte_write32((uint32_t)tail,
++		    (uint8_t *)rxq->chan_base + DMA_CHAN_OFF_RX_END_ADDR);
++
++	STMMAC_MD_LOG("wrote RXBASE_HI=0x%08x RXBASE=0x%08x RXLEN=%u RXTAIL=0x%08x | readback HI=0x%08x BASE=0x%08x LEN=0x%08x TAIL=0x%08x",
++		      (uint32_t)(rxq->rx_ring_iova >> 32), (uint32_t)rxq->rx_ring_iova,
++		      rxq->nb_desc - 1, (uint32_t)tail,
++		      MD_R(rxq->chan_base, 0x18),
++		      MD_R(rxq->chan_base, DMA_CHAN_OFF_RX_BASE_ADDR),
++		      MD_R(rxq->chan_base, DMA_CHAN_OFF_RX_RING_LEN),
++		      MD_R(rxq->chan_base, DMA_CHAN_OFF_RX_END_ADDR));
++
++	RTE_SET_USED(dev);
++	return 0;
++}
++
++/*
++ * MTL op-mode: TSF/RSF store-and-forward, single queue enabled,
++ * mirrors dwmac4_dma_tx_chan_op_mode()/dwmac4_dma_rx_chan_op_mode()
++ * (dwmac4_dma.c:261-383) with a fixed generously-sized FIFO
++ * allocation for the single Phase-1 queue (no flow-control / RFD/RFA
++ * programming -- that only applies to multi-queue FIFO partitioning).
++ */
++static void
++stmmac_mtl_init(void *mac_base, const struct stmmac_chan_addrs *addrs)
++{
++	void *tx_op = (uint8_t *)mac_base + MTL_CHAN_TX_OP_MODE(addrs, 0);
++	void *rx_op = (uint8_t *)mac_base + MTL_CHAN_RX_OP_MODE(addrs, 0);
++	uint32_t value;
++
++	value = rte_read32(tx_op);
++	value |= MTL_OP_MODE_TSF | MTL_OP_MODE_TXQEN;
++	rte_write32(value, tx_op);
++
++	value = rte_read32(rx_op);
++	value |= MTL_OP_MODE_RSF;
++	rte_write32(value, rx_op);
++}
++
++static void
++stmmac_mac_init(void *mac_base, struct rte_ether_addr *mac_addr)
++{
++	void *config_reg = (uint8_t *)mac_base + GMAC_CONFIG;
++	uint32_t value;
++	uint32_t addr_lo, addr_hi;
++
++	addr_lo = mac_addr->addr_bytes[0] | (mac_addr->addr_bytes[1] << 8) |
++		  (mac_addr->addr_bytes[2] << 16) |
++		  (mac_addr->addr_bytes[3] << 24);
++	addr_hi = mac_addr->addr_bytes[4] | (mac_addr->addr_bytes[5] << 8);
++
++	rte_write32(addr_lo, (uint8_t *)mac_base + GMAC_ADDR_LOW(0));
++	rte_write32(addr_hi, (uint8_t *)mac_base + GMAC_ADDR_HIGH(0));
++
++	value = rte_read32(config_reg);
++	value |= GMAC_CONFIG_IPC | GMAC_CONFIG_ACS;
++	value |= GMAC_CONFIG_TE | GMAC_CONFIG_RE;
++	rte_write32(value, config_reg);
++}
++
++static void
++stmmac_dma_start(struct stmmac_priv *priv)
++{
++	void *tx_ctrl = (uint8_t *)priv->mac_base +
++			DMA_CHAN_TX_CONTROL(&priv->chan_addrs, 0);
++	void *rx_ctrl = (uint8_t *)priv->mac_base +
++			DMA_CHAN_RX_CONTROL(&priv->chan_addrs, 0);
++	uint32_t value;
++
++	value = rte_read32(tx_ctrl);
++	value |= DMA_CONTROL_ST;
++	rte_write32(value, tx_ctrl);
++
++	value = rte_read32(rx_ctrl);
++	value &= ~DMA_CONTROL_RPF;
++	/* --MD-- bisect knob: STMMAC_MD_NO_RXDMA=1 leaves the RX DMA stopped */
++	if (getenv("STMMAC_MD_NO_RXDMA") != NULL)
++		STMMAC_MD_LOG("STMMAC_MD_NO_RXDMA set: RX DMA (SR) NOT started");
++	else
++		value |= DMA_CONTROL_SR;
++	rte_write32(value, rx_ctrl);
++}
++
++static void
++stmmac_dma_stop(struct stmmac_priv *priv)
++{
++	void *tx_ctrl = (uint8_t *)priv->mac_base +
++			DMA_CHAN_TX_CONTROL(&priv->chan_addrs, 0);
++	void *rx_ctrl = (uint8_t *)priv->mac_base +
++			DMA_CHAN_RX_CONTROL(&priv->chan_addrs, 0);
++	uint32_t value;
++
++	value = rte_read32(tx_ctrl);
++	value &= ~DMA_CONTROL_ST;
++	rte_write32(value, tx_ctrl);
++
++	value = rte_read32(rx_ctrl);
++	value |= DMA_CONTROL_RPF;
++	value &= ~DMA_CONTROL_SR;
++	rte_write32(value, rx_ctrl);
++}
++
++/*
++ * --MD-- TEMPORARY: periodic MMC RX counter / DMA status monitor.
++ * GMAC4 MMC block = mac_base + 0x700 (mmc.h MMC_GMAC4_OFFSET); offsets from
++ * mmc_core.c. Tells whether frames reach the MAC while VFIO owns the device:
++ *   MMC counters move  -> PHY/RGMII/MAC RX fine, problem is MTL/DMA/descs/burst
++ *   MMC counters stay 0 -> frames never reach the MAC
++ */
++#define MD_MMC_BASE			0x700
++#define MD_MMC_CNTRL			(MD_MMC_BASE + 0x00)
++#define MD_MMC_TX_OCTETCOUNT_GB		(MD_MMC_BASE + 0x14)
++#define MD_MMC_TX_FRAMECOUNT_GB		(MD_MMC_BASE + 0x18)
++#define MD_MMC_TX_UNDERFLOW_ERROR	(MD_MMC_BASE + 0x48)	/* mmc_core.c */
++#define MD_MMC_TX_CARRIER_ERROR		(MD_MMC_BASE + 0x60)
++#define MD_MMC_TX_OCTETCOUNT_G		(MD_MMC_BASE + 0x64)
++#define MD_MMC_TX_FRAMECOUNT_G		(MD_MMC_BASE + 0x68)
++#define MD_MMC_RX_FRAMECOUNT_GB		(MD_MMC_BASE + 0x80)
++#define MD_MMC_RX_OCTETCOUNT_GB		(MD_MMC_BASE + 0x84)
++#define MD_MMC_RX_OCTETCOUNT_G		(MD_MMC_BASE + 0x88)
++#define MD_MMC_RX_BROADCASTFRAME_G	(MD_MMC_BASE + 0x8c)
++#define MD_MMC_RX_MULTICASTFRAME_G	(MD_MMC_BASE + 0x90)
++#define MD_MMC_RX_CRC_ERROR		(MD_MMC_BASE + 0x94)
++#define MD_MMC_RX_ALIGN_ERR		(MD_MMC_BASE + 0x98)
++#define MD_MMC_RX_RUNT_ERROR		(MD_MMC_BASE + 0x9c)
++#define MD_MMC_RX_JABBER_ERROR		(MD_MMC_BASE + 0xa0)
++#define MD_MMC_RX_UNDERSIZE_G		(MD_MMC_BASE + 0xa4)
++#define MD_MMC_RX_OVERSIZE_G		(MD_MMC_BASE + 0xa8)
++#define MD_MMC_RX_UNICAST_G		(MD_MMC_BASE + 0xc4)
++#define MD_MMC_RX_FIFOOVERFLOW		(MD_MMC_BASE + 0xd4)
++#define MD_MMC_PERIOD_US		(1000 * 1000)
++
++static void
++stmmac_md_mmc_dump(struct rte_eth_dev *dev, const char *tag)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++	uint8_t *b = priv->mac_base;
++	uint32_t dch = stmmac_dma_chan_base(&priv->chan_addrs, 0);
++	uint32_t mch = stmmac_mtl_chan_base(&priv->chan_addrs, 0);
++	struct stmmac_rx_queue *rxq = priv->rxq[0];
++	struct stmmac_tx_queue *txq = priv->txq[0];
++
++	fprintf(stderr, "--MD-- MMC[%s] CNTRL=0x%x RX: frame_gb=%u octet_gb=%u octet_g=%u crc_err=%u align_err=%u runt=%u undersize=%u oversize=%u jabber=%u fifo_ovf=%u bcast=%u mcast=%u ucast=%u | TX: frame_gb=%u octet_gb=%u frame_g=%u octet_g=%u underflow=%u carrier_err=%u\n",
++		tag, MD_R(b, MD_MMC_CNTRL),
++		MD_R(b, MD_MMC_RX_FRAMECOUNT_GB), MD_R(b, MD_MMC_RX_OCTETCOUNT_GB),
++		MD_R(b, MD_MMC_RX_OCTETCOUNT_G), MD_R(b, MD_MMC_RX_CRC_ERROR),
++		MD_R(b, MD_MMC_RX_ALIGN_ERR), MD_R(b, MD_MMC_RX_RUNT_ERROR),
++		MD_R(b, MD_MMC_RX_UNDERSIZE_G), MD_R(b, MD_MMC_RX_OVERSIZE_G),
++		MD_R(b, MD_MMC_RX_JABBER_ERROR), MD_R(b, MD_MMC_RX_FIFOOVERFLOW),
++		MD_R(b, MD_MMC_RX_BROADCASTFRAME_G), MD_R(b, MD_MMC_RX_MULTICASTFRAME_G),
++		MD_R(b, MD_MMC_RX_UNICAST_G),
++		MD_R(b, MD_MMC_TX_FRAMECOUNT_GB), MD_R(b, MD_MMC_TX_OCTETCOUNT_GB),
++		MD_R(b, MD_MMC_TX_FRAMECOUNT_G), MD_R(b, MD_MMC_TX_OCTETCOUNT_G),
++		MD_R(b, MD_MMC_TX_UNDERFLOW_ERROR), MD_R(b, MD_MMC_TX_CARRIER_ERROR));
++	fprintf(stderr, "--MD-- RXPATH[%s] MAC_CONFIG=0x%08x PFILT=0x%08x RXQ_CTRL0=0x%08x PHYIF=0x%08x(lnk=%u) MAC_DEBUG=0x%08x | MTL RXQ0_OP=0x%08x RXQ0_DBG=0x%08x | DMA CH0 RXCTRL=0x%08x STATUS=0x%08x CURRXD=0x%08x CURRXBUF=0x%08x RXTAIL=0x%08x DMA_STATUS=0x%08x DBG0=0x%08x CURRXBUF_HI=0x%08x CURTXBUF_HI=0x%08x\n",
++		tag, MD_R(b, GMAC_CONFIG), MD_R(b, GMAC_PACKET_FILTER),
++		MD_R(b, MD_GMAC_RXQ_CTRL0), MD_R(b, 0xf8), !!(MD_R(b, 0xf8) & RTE_BIT32(19)),
++		MD_R(b, 0x114), MD_R(b, mch + 0x30), MD_R(b, mch + 0x38),
++		MD_R(b, dch + 0x8), MD_R(b, dch + 0x60), MD_R(b, dch + 0x4c),
++		MD_R(b, dch + 0x5c), MD_R(b, dch + 0x28),
++		MD_R(b, DMA_STATUS_MD), MD_R(b, 0x100c), MD_R(b, dch + 0x58), MD_R(b, dch + 0x50));
++	if (rxq != NULL) {
++		fprintf(stderr, "--MD-- RXRING[%s] rx_tail(sw)=%u desc[0].des3=0x%08x desc[1].des3=0x%08x desc[tail].des3=0x%08x (OWN=bit31: 1=DMA owns, 0=packet written back)\n",
++			tag, rxq->rx_tail, rxq->rx_ring[0].des[3], rxq->rx_ring[1].des[3],
++			rxq->rx_ring[rxq->rx_tail].des[3]);
++	}
++	/*
++	 * --MD-- TX path: MTL TXQ0 op/debug, DMA CH0 TX control/status and
++	 * pointers. STATUS bit0=TI (frame sent), bit2=TBU (DMA idle, normal
++	 * when ring drained). TXTAIL should equal CURTXD once all sent.
++	 */
++	fprintf(stderr, "--MD-- TXPATH[%s] MTL TXQ0_OP=0x%08x TXQ0_DBG=0x%08x | DMA CH0 TXCTRL=0x%08x STATUS=0x%08x(TI=%u TBU=%u) CURTXD=0x%08x TXTAIL=0x%08x CURTXBUF=0x%08x CURTXBUF_HI=0x%08x DMA_STATUS=0x%08x\n",
++		tag, MD_R(b, mch + 0x00), MD_R(b, mch + 0x08),
++		MD_R(b, dch + 0x4), MD_R(b, dch + 0x60),
++		!!(MD_R(b, dch + 0x60) & RTE_BIT32(0)), !!(MD_R(b, dch + 0x60) & RTE_BIT32(2)),
++		MD_R(b, dch + 0x44), MD_R(b, dch + 0x20), MD_R(b, dch + 0x54),
++		MD_R(b, dch + 0x50), MD_R(b, DMA_STATUS_MD));
++	if (txq != NULL) {
++		uint16_t last = (txq->tx_tail + txq->nb_desc - 1) % txq->nb_desc;
++
++		fprintf(stderr, "--MD-- TXRING[%s] tx_tail(sw)=%u last=%u desc[last]=%08x %08x %08x %08x desc[0].des3=0x%08x | sw tx_packets=%" PRIu64 " tx_bytes=%" PRIu64 " tx_errors=%" PRIu64 " ring_full=%" PRIu64 " (des3 OWN=1: DMA still owns; 0: sent, written back)\n",
++			tag, txq->tx_tail, last,
++			txq->tx_ring[last].des[0], txq->tx_ring[last].des[1],
++			txq->tx_ring[last].des[2], txq->tx_ring[last].des[3],
++			txq->tx_ring[0].des[3],
++			txq->tx_packets, txq->tx_bytes, txq->tx_errors,
++			txq->tx_ring_full);
++	}
++}
++
++/*
++ * Only dump when something we watch changed (MMC RX/TX counters, DMA RX
++ * state, RX ring head); otherwise a one-line heartbeat every
++ * MD_HEARTBEAT_EVERY samples.
++ */
++#define MD_HEARTBEAT_EVERY	10
++#define MD_SNAP_N		24
++
++static void
++stmmac_md_snapshot(struct rte_eth_dev *dev, uint32_t *s)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++	uint8_t *b = priv->mac_base;
++	uint32_t dch = stmmac_dma_chan_base(&priv->chan_addrs, 0);
++	uint32_t mch = stmmac_mtl_chan_base(&priv->chan_addrs, 0);
++	struct stmmac_rx_queue *rxq = priv->rxq[0];
++	unsigned int n = 0, off;
++
++	for (off = MD_MMC_RX_FRAMECOUNT_GB; off <= MD_MMC_RX_FIFOOVERFLOW; off += 4)
++		s[n++] = MD_R(b, off);			/* 0x80..0xd4: 22 RX counters */
++	s[n++] = MD_R(b, MD_MMC_TX_FRAMECOUNT_GB);
++	s[n++] = MD_R(b, dch + 0x60) ^ MD_R(b, dch + 0x4c) ^ MD_R(b, dch + 0x5c) ^
++		 MD_R(b, mch + 0x38) ^ (rxq ? rxq->rx_ring[rxq->rx_tail].des[3] : 0) ^
++		 MD_R(b, dch + 0x44) ^ MD_R(b, dch + 0x20) ^ MD_R(b, mch + 0x08);	/* --MD-- TX state */
++}
++
++static void
++stmmac_md_mmc_alarm(void *arg)
++{
++	struct rte_eth_dev *dev = arg;
++	static uint32_t prev[MD_SNAP_N];
++	static unsigned int quiet;
++	uint32_t cur[MD_SNAP_N] = { 0 };
++
++	if (!dev->data->dev_started)
++		return;
++
++	stmmac_md_snapshot(dev, cur);
++	if (memcmp(cur, prev, sizeof(cur)) != 0) {
++		memcpy(prev, cur, sizeof(cur));
++		quiet = 0;
++		stmmac_md_mmc_dump(dev, "changed");
++	} else if (++quiet % MD_HEARTBEAT_EVERY == 0) {
++		fprintf(stderr, "--MD-- no change in MMC/DMA-RX state for %us (RX frame_gb=%u)\n",
++			quiet * (MD_MMC_PERIOD_US / 1000000),
++			MD_R(dev->data->dev_private ?
++			     ((struct stmmac_priv *)dev->data->dev_private)->mac_base : NULL,
++			     MD_MMC_RX_FRAMECOUNT_GB));
++	}
++	rte_eal_alarm_set(MD_MMC_PERIOD_US, stmmac_md_mmc_alarm, dev);
++}
++
++static void
++stmmac_md_mmc_start(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++	void *cntrl = (uint8_t *)priv->mac_base + MD_MMC_CNTRL;
++	uint32_t v = rte_read32(cntrl);
++
++	/* reset all MMC counters (bit0 self-clears) so the baseline is 0 */
++	rte_write32(v | 0x1, cntrl);
++	STMMAC_MD_LOG("MMC_CNTRL before=0x%08x after counter-reset=0x%08x (freeze bit3=%u)",
++		      v, rte_read32(cntrl), !!(rte_read32(cntrl) & 0x8));
++	stmmac_md_mmc_dump(dev, "after-start");
++	/*
++	 * The periodic "changed" / heartbeat monitor is OFF by default (it
++	 * prints MMC/RXPATH/RXRING/TXPATH/TXRING lines every second). Set
++	 * STMMAC_MD_MONITOR=1 in the environment to turn it back on.
++	 */
++	if (getenv("STMMAC_MD_MONITOR") != NULL)
++		rte_eal_alarm_set(MD_MMC_PERIOD_US, stmmac_md_mmc_alarm, dev);
++}
++
++static int
++stmmac_eth_configure(struct rte_eth_dev *dev)
++{
++	fprintf(stderr, "--MD--17 entered eth-conf\n");RTE_SET_USED(dev);
++	fprintf(stderr, "--MD--17 exit-0 eth-conf\n");return 0;
++}
++
++static int
++stmmac_eth_start(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++	uint32_t v;
++	int ret;
++
++	STMMAC_MD_LOG("ENTER dev=%p port=%u priv=%p mac_base(ioaddr)=%p dma_base=%p rgmii_base=%p",
++		      dev, dev->data->port_id, priv, priv->mac_base,
++		      (uint8_t *)priv->mac_base + DMA_BUS_MODE, priv->rgmii_base);
++	STMMAC_MD_LOG("nb_rx_queues=%u nb_tx_queues=%u rxq[0]=%p txq[0]=%p data->rx_queues[0]=%p data->tx_queues[0]=%p",
++		      dev->data->nb_rx_queues, dev->data->nb_tx_queues,
++		      priv->rxq[0], priv->txq[0],
++		      dev->data->rx_queues ? dev->data->rx_queues[0] : NULL,
++		      dev->data->tx_queues ? dev->data->tx_queues[0] : NULL);
++	if (priv->rxq[0] == NULL || priv->txq[0] == NULL) {
++		STMMAC_MD_LOG("queues not set up -> -EINVAL");
++		return -EINVAL;
++	}
++
++	stmmac_md_dump_regs(priv, "start: before anything");
++	stmmac_md_mmio_write_test(priv);
++
++	/* Linux: ethqos_clks_config() -> FUNC_CLK_EN before DMA reset */
++	stmmac_rgmii_func_clk_en(priv);
++	stmmac_rgmii_id_1g_init(priv);
++	stmmac_phy_rgmii_id_init(priv);
++	stmmac_md_dump_regs(priv, "after RGMII FUNC_CLK_EN + id/1G init + PHY delays");
++
++	ret = stmmac_dma_reset(priv->mac_base);
++	STMMAC_MD_LOG("stmmac_dma_reset() ret=%d", ret);
++	stmmac_md_dump_regs(priv, ret ? "DMA reset TIMEOUT" : "after DMA reset");
++	if (ret != 0) {
++		STMMAC_PMD_ERR("DMA soft-reset timed out");
++		return ret;
++	}
++
++	stmmac_dma_sysbus_init(priv->mac_base);
++	STMMAC_MD_LOG("after sysbus_init SYSBUS=0x%08x AXI=0x%08x",
++		      MD_R(priv->mac_base, DMA_SYS_BUS_MODE),
++		      MD_R(priv->mac_base, DMA_AXI_BUS_MODE));
++
++	ret = stmmac_tx_ring_setup(dev, priv->txq[0]);
++	STMMAC_MD_LOG("stmmac_tx_ring_setup() ret=%d", ret);
++	if (ret != 0)
++		return ret;
++
++	ret = stmmac_rx_ring_setup(dev, priv->rxq[0]);
++	STMMAC_MD_LOG("stmmac_rx_ring_setup() ret=%d", ret);
++	if (ret != 0)
++		return ret;
++
++	stmmac_mac_init(priv->mac_base, &priv->mac_addr);
++	/* stmmac_mac_enable_rx_queues(): RXQ0 enabled in DCB/generic mode */
++	v = MD_R(priv->mac_base, MD_GMAC_RXQ_CTRL0);
++	rte_write32((v & ~0x3u) | 0x2u, (uint8_t *)priv->mac_base + MD_GMAC_RXQ_CTRL0);
++	STMMAC_MD_LOG("after mac_init CONFIG=0x%08x RXQ_CTRL0 before=0x%08x after=0x%08x",
++		      MD_R(priv->mac_base, GMAC_CONFIG), v,
++		      MD_R(priv->mac_base, MD_GMAC_RXQ_CTRL0));
++
++	stmmac_mtl_init(priv->mac_base, &priv->chan_addrs);
++	stmmac_dma_start(priv);
++	stmmac_md_dump_regs(priv, "after MTL init + DMA start");
++
++	dev->rx_pkt_burst = stmmac_rx_pkt_burst;
++	dev->tx_pkt_burst = stmmac_tx_pkt_burst;
++
++	dev->data->dev_started = 1;
++
++	stmmac_md_mmc_start(dev);	/* --MD-- periodic MMC RX monitor */
++	dev->data->rx_queue_state[0] = RTE_ETH_QUEUE_STATE_STARTED;
++	//--MD-- change
++	dev->data->tx_queue_state[0] = RTE_ETH_QUEUE_STATE_STARTED;
++	fprintf(stderr, "---MD--- TX: tx_queue_state[0]=STARTED tx_tail=%u nb_desc=%u\n",
++		priv->txq[0]->tx_tail, priv->txq[0]->nb_desc);
++	STMMAC_MD_LOG("EXIT ret=0");
++	return 0;
++}
++
++static int
++stmmac_eth_stop(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++
++	dev->data->dev_started = 0;
++	rte_eal_alarm_cancel(stmmac_md_mmc_alarm, dev);	/* --MD-- */
++	stmmac_md_mmc_dump(dev, "at-stop");
++	stmmac_dma_stop(priv);
++	dev->data->rx_queue_state[0] = RTE_ETH_QUEUE_STATE_STOPPED;
++	//--MD-- change
++	dev->data->tx_queue_state[0] = RTE_ETH_QUEUE_STATE_STOPPED;
++	return 0;
++}
++
++static void
++stmmac_queue_release(struct stmmac_priv *priv)
++{
++	if (priv->txq[0] != NULL) {
++		rte_free(priv->txq[0]->sw_ring);
++		rte_free(priv->txq[0]);
++		priv->txq[0] = NULL;
++	}
++	if (priv->rxq[0] != NULL) {
++		unsigned int i;
++
++		for (i = 0; i < priv->rxq[0]->nb_desc; i++)
++			rte_pktmbuf_free(priv->rxq[0]->sw_ring[i]);
++		rte_free(priv->rxq[0]->sw_ring);
++		rte_free(priv->rxq[0]);
++		priv->rxq[0] = NULL;
++	}
++}
++
++static int
++stmmac_eth_close(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++
++	stmmac_queue_release(priv);
++
++	return 0;
++}
++
++/*
++ * Link state: the DP83867 BMSR LINK_STATUS bit (bit 2) is a
++ * latch-low register (IEEE 802.3 clause 22.2.4.1.3).  A single read
++ * after probe returns 0 ("was-down") even when the link is live.
++ *
++ * Fix: read BMSR *twice* to clear the latch, then use the non-latched
++ * DP83867 PHYSTS register (0x11) as the authoritative live-link
++ * source.  Speed/duplex are decoded from PHYSTS[15:14]/[13] rather
++ * than being hardcoded to 1G/FD.
++ *
++ * Note: MD_DP83867_PHYSTS is declared in stmmac_regs.h.  The direct
++ * clause-22 read does NOT use the MMD indirect path (REGCR/ADDAR) --
++ * PHYSTS at address 0x11 is a standard clause-22 register on DP83867.
++ */
++static int
++stmmac_eth_link_update(struct rte_eth_dev *dev, int wait_to_complete)
++{
++	fprintf(stderr, "--MD--16 entered link-update\n");
++	struct stmmac_priv *priv = dev->data->dev_private;
++	struct rte_eth_link link;
++	uint16_t bmsr, physts;
++
++	RTE_SET_USED(wait_to_complete);
++
++	memset(&link, 0, sizeof(link));
++
++	/*
++	 * BUG-1 FIX: clear BMSR latch-low by reading twice, then use the
++	 * non-latched DP83867 PHYSTS (0x11) as the real-time link source.
++	 * The first read merely clears the latch; only the second is used.
++	 */
++	(void)stmmac_mdio_read(priv->mac_base, priv->mdio_addr,
++			       STMMAC_MII_BMSR); /* clear latch */
++	bmsr = stmmac_mdio_read(priv->mac_base, priv->mdio_addr,
++				STMMAC_MII_BMSR); /* real state */
++
++	/* PHYSTS is non-latched: bit 2 reflects the live link state. */
++	physts = stmmac_mdio_read(priv->mac_base, priv->mdio_addr,
++				  MD_DP83867_PHYSTS);
++
++	/*
++	 * Prefer PHYSTS for link status (non-latched, real-time).
++	 * Fall back to BMSR if PHY does not respond (0xffff).
++	 */
++	if (physts != 0xffff)
++		priv->link_up = !!(physts & MD_DP83867_PHYSTS_LINK_BIT);
++	else
++		priv->link_up = !!(bmsr & STMMAC_MII_BMSR_LSTATUS);
++	link.link_status = priv->link_up;
++
++	/* Decode speed and duplex from PHYSTS[15:14] / PHYSTS[13]. */
++	if (physts != 0xffff && priv->link_up) {
++		uint16_t spd = physts & MD_DP83867_PHYSTS_SPEED_MASK;
++
++		if (spd == MD_DP83867_PHYSTS_SPEED_1G)
++			link.link_speed = RTE_ETH_SPEED_NUM_1G;
++		else if (spd == MD_DP83867_PHYSTS_SPEED_100M)
++			link.link_speed = RTE_ETH_SPEED_NUM_100M;
++		else
++			link.link_speed = RTE_ETH_SPEED_NUM_10M;
++
++		link.link_duplex = (physts & MD_DP83867_PHYSTS_DUPLEX_BIT) ?
++			RTE_ETH_LINK_FULL_DUPLEX : RTE_ETH_LINK_HALF_DUPLEX;
++	} else {
++		/* link down or PHY not responding: report defaults */
++		link.link_speed  = RTE_ETH_SPEED_NUM_1G;
++		link.link_duplex = RTE_ETH_LINK_FULL_DUPLEX;
++	}
++
++	link.link_autoneg = RTE_ETH_LINK_AUTONEG;
++
++	fprintf(stderr,
++		"--MD--16 link-update: bmsr=0x%04x physts=0x%04x link=%u speed=%u duplex=%u\n",
++		bmsr, physts, link.link_status, link.link_speed,
++		link.link_duplex);
++	fprintf(stderr, "--MD--16 exit - rte_eth_linkstatus_set(%u) \n", rte_eth_linkstatus_set(dev, &link));
++	return rte_eth_linkstatus_set(dev, &link);
++}
++
++static int
++stmmac_promiscuous_enable(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++	void *filter_reg = (uint8_t *)priv->mac_base + GMAC_PACKET_FILTER;
++
++	rte_write32(rte_read32(filter_reg) | GMAC_PACKET_FILTER_PR, filter_reg);
++
++	return 0;
++}
++
++static int
++stmmac_promiscuous_disable(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++	void *filter_reg = (uint8_t *)priv->mac_base + GMAC_PACKET_FILTER;
++
++	rte_write32(rte_read32(filter_reg) & ~GMAC_PACKET_FILTER_PR, filter_reg);
++
++	return 0;
++}
++
++static int
++stmmac_mac_addr_set(struct rte_eth_dev *dev, struct rte_ether_addr *addr)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++
++	rte_ether_addr_copy(addr, &priv->mac_addr);
++
++	rte_write32(addr->addr_bytes[0] | (addr->addr_bytes[1] << 8) |
++		    (addr->addr_bytes[2] << 16) | (addr->addr_bytes[3] << 24),
++		    (uint8_t *)priv->mac_base + GMAC_ADDR_LOW(0));
++	rte_write32(addr->addr_bytes[4] | (addr->addr_bytes[5] << 8),
++		    (uint8_t *)priv->mac_base + GMAC_ADDR_HIGH(0));
++
++	return 0;
++}
++
++static int
++stmmac_stats_get(struct rte_eth_dev *dev, struct rte_eth_stats *stats,
++		  struct eth_queue_stats *qstats)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++
++	RTE_SET_USED(qstats);
++	memcpy(stats, &priv->stats, sizeof(*stats));
++
++	/* RX counters live in the queue (updated by rx_pkt_burst) */
++	if (priv->rxq[0] != NULL) {
++		stats->ipackets = priv->rxq[0]->rx_packets;
++		stats->ibytes = priv->rxq[0]->rx_bytes;
++		stats->ierrors = priv->rxq[0]->rx_errors;
++		stats->rx_nombuf = priv->rxq[0]->rx_nombuf;
++	}
++	/* TX counters live in the queue (updated by tx_pkt_burst) */
++	if (priv->txq[0] != NULL) {
++		stats->opackets = priv->txq[0]->tx_packets;
++		stats->obytes = priv->txq[0]->tx_bytes;
++		stats->oerrors = priv->txq[0]->tx_errors;
++	}
++
++	return 0;
++}
++
++static int
++stmmac_stats_reset(struct rte_eth_dev *dev)
++{
++	struct stmmac_priv *priv = dev->data->dev_private;
++
++	memset(&priv->stats, 0, sizeof(priv->stats));
++	if (priv->rxq[0] != NULL) {
++		priv->rxq[0]->rx_packets = 0;
++		priv->rxq[0]->rx_bytes = 0;
++		priv->rxq[0]->rx_errors = 0;
++		priv->rxq[0]->rx_nombuf = 0;
++	}
++	if (priv->txq[0] != NULL) {
++		priv->txq[0]->tx_packets = 0;
++		priv->txq[0]->tx_bytes = 0;
++		priv->txq[0]->tx_errors = 0;
++		priv->txq[0]->tx_ring_full = 0;
++	}
++
++	return 0;
++}
++
++static int
++stmmac_dev_infos_get(struct rte_eth_dev *dev, struct rte_eth_dev_info *dev_info)
++{
++	fprintf(stderr, "--MD--13 entered stmmac_dev_infos_get\n");RTE_SET_USED(dev);
++
++	dev_info->max_rx_queues = STMMAC_MAX_Q;
++	dev_info->max_tx_queues = STMMAC_MAX_Q;
++	dev_info->min_rx_bufsize = RTE_ETHER_MIN_LEN;
++	dev_info->max_rx_pktlen = RTE_ETHER_MAX_LEN;
++	dev_info->rx_offload_capa = dev_rx_offloads_sup;
++	dev_info->tx_offload_capa = dev_tx_offloads_sup;
++   fprintf(stderr, "--MD--13 exit-0 stmmac_dev_infos_get\n");
++	return 0;
++}
++
++static int
++stmmac_rx_queue_setup(struct rte_eth_dev *dev, uint16_t rx_queue_id,
++		       uint16_t nb_rx_desc, unsigned int socket_id,
++		       const struct rte_eth_rxconf *rx_conf,
++		       struct rte_mempool *mb_pool)
++{
++	fprintf(stderr, "--MD--14 entered stmmac_rx_queue_setup\n");struct stmmac_priv *priv = dev->data->dev_private;
++	struct stmmac_rx_queue *rxq;
++	const struct rte_memzone *mz;
++	size_t ring_size;
++
++	RTE_SET_USED(rx_conf);
++
++	if (rx_queue_id >= STMMAC_MAX_Q) {
++		STMMAC_PMD_ERR("invalid rx queue id %u, max %u",
++			       rx_queue_id, STMMAC_MAX_Q);
++		return -EINVAL;
++	}
++
++	if (nb_rx_desc == 0)
++		nb_rx_desc = STMMAC_DEFAULT_RING_SIZE;
++
++	rxq = rte_zmalloc_socket("stmmac_rxq", sizeof(*rxq),
++				  RTE_CACHE_LINE_SIZE, socket_id);
++	if (rxq == NULL)
++		return -ENOMEM;
++
++	ring_size = nb_rx_desc * sizeof(struct stmmac_desc);
++	mz = rte_eth_dma_zone_reserve(dev, "rx_ring", rx_queue_id, ring_size,
++				       RTE_CACHE_LINE_SIZE, socket_id);
++	if (mz == NULL) {
++		rte_free(rxq);
++		return -ENOMEM;
++	}
++
++	rxq->sw_ring = rte_zmalloc_socket("stmmac_rx_sw_ring",
++			nb_rx_desc * sizeof(struct rte_mbuf *),
++			RTE_CACHE_LINE_SIZE, socket_id);
++	if (rxq->sw_ring == NULL) {
++		rte_free(rxq);
++		return -ENOMEM;
++	}
++
++	rxq->rx_ring = mz->addr;
++	rxq->rx_ring_iova = mz->iova;
++	rxq->nb_desc = nb_rx_desc;
++	rxq->rx_tail = 0;
++	rxq->queue_id = rx_queue_id;
++	rxq->port_id = dev->data->port_id;
++	rxq->mb_pool = mb_pool;
++	rxq->chan_base = (uint8_t *)priv->mac_base +
++		stmmac_dma_chan_base(&priv->chan_addrs, 0);
++	rxq->mz = mz;
++
++	priv->rxq[rx_queue_id] = rxq;
++	dev->data->rx_queues[rx_queue_id] = rxq;
++	STMMAC_MD_LOG("rxq id=%u nb_rx_desc=%u socket=%u rxq=%p mz=%p ring_va=%p ring_iova=0x%" PRIx64 " ring_size=%zu chan_base=%p (off 0x%x) mb_pool=%p(%s)",
++		      rx_queue_id, nb_rx_desc, socket_id, rxq, mz, mz->addr, mz->iova,
++		      ring_size, rxq->chan_base,
++		      stmmac_dma_chan_base(&priv->chan_addrs, 0), mb_pool,
++		      mb_pool ? mb_pool->name : "?");
++	return 0;
++}
++
++static int
++stmmac_tx_queue_setup(struct rte_eth_dev *dev, uint16_t tx_queue_id,
++		       uint16_t nb_tx_desc, unsigned int socket_id,
++		       const struct rte_eth_txconf *tx_conf)
++{
++	fprintf(stderr, "--MD--15 entered stmmac_tx_queue_setup\n");struct stmmac_priv *priv = dev->data->dev_private;
++	struct stmmac_tx_queue *txq;
++	const struct rte_memzone *mz;
++	size_t ring_size;
++
++	RTE_SET_USED(tx_conf);
++
++	if (tx_queue_id >= STMMAC_MAX_Q) {
++		STMMAC_PMD_ERR("invalid tx queue id %u, max %u",
++			       tx_queue_id, STMMAC_MAX_Q);
++		return -EINVAL;
++	}
++
++	if (nb_tx_desc == 0)
++		nb_tx_desc = STMMAC_DEFAULT_RING_SIZE;
++	/* tx_pkt_burst checks whole 64B lines (4 descs): ring must be a multiple of 4 */
++	if (nb_tx_desc % 4) {
++		STMMAC_PMD_ERR("nb_tx_desc %u must be a multiple of 4", nb_tx_desc);
++		return -EINVAL;
++	}
++
++	txq = rte_zmalloc_socket("stmmac_txq", sizeof(*txq),
++				  RTE_CACHE_LINE_SIZE, socket_id);
++	if (txq == NULL)
++		return -ENOMEM;
++
++	ring_size = nb_tx_desc * sizeof(struct stmmac_desc);
++	mz = rte_eth_dma_zone_reserve(dev, "tx_ring", tx_queue_id, ring_size,
++				       RTE_CACHE_LINE_SIZE, socket_id);
++	if (mz == NULL) {
++		rte_free(txq);
++		return -ENOMEM;
++	}
++
++	txq->sw_ring = rte_zmalloc_socket("stmmac_tx_sw_ring",
++			nb_tx_desc * sizeof(struct rte_mbuf *),
++			RTE_CACHE_LINE_SIZE, socket_id);
++	if (txq->sw_ring == NULL) {
++		rte_free(txq);
++		return -ENOMEM;
++	}
++
++	txq->tx_ring = mz->addr;
++	txq->tx_ring_iova = mz->iova;
++	txq->nb_desc = nb_tx_desc;
++	txq->tx_tail = 0;
++	txq->tx_free = 0;
++	txq->queue_id = tx_queue_id;
++	txq->port_id = dev->data->port_id;
++	txq->chan_base = (uint8_t *)priv->mac_base +
++		stmmac_dma_chan_base(&priv->chan_addrs, 0);
++	txq->mz = mz;
++
++	priv->txq[tx_queue_id] = txq;
++	dev->data->tx_queues[tx_queue_id] = txq;
++	STMMAC_MD_LOG("txq id=%u nb_tx_desc=%u socket=%u txq=%p mz=%p ring_va=%p ring_iova=0x%" PRIx64 " ring_size=%zu chan_base=%p (off 0x%x)",
++		      tx_queue_id, nb_tx_desc, socket_id, txq, mz, mz->addr, mz->iova,
++		      ring_size, txq->chan_base,
++		      stmmac_dma_chan_base(&priv->chan_addrs, 0));
++	return 0;
++}
++
++/* Lets testpmd "show config rxtx" report the real ring size (was 0). */
++static void
++stmmac_rxq_info_get(struct rte_eth_dev *dev, uint16_t qid,
++		    struct rte_eth_rxq_info *qinfo)
++{
++	struct stmmac_rx_queue *rxq = dev->data->rx_queues[qid];
++
++	qinfo->mp = rxq->mb_pool;
++	qinfo->nb_desc = rxq->nb_desc;
++}
++
++static void
++stmmac_txq_info_get(struct rte_eth_dev *dev, uint16_t qid,
++		    struct rte_eth_txq_info *qinfo)
++{
++	struct stmmac_tx_queue *txq = dev->data->tx_queues[qid];
++
++	qinfo->nb_desc = txq->nb_desc;
++}
++
++static const struct eth_dev_ops stmmac_eth_ops = {
++	.dev_configure		= stmmac_eth_configure,
++	.dev_start		= stmmac_eth_start,
++	.dev_stop		= stmmac_eth_stop,
++	.dev_close		= stmmac_eth_close,
++	.link_update		= stmmac_eth_link_update,
++	.promiscuous_enable	= stmmac_promiscuous_enable,
++	.promiscuous_disable	= stmmac_promiscuous_disable,
++	.mac_addr_set		= stmmac_mac_addr_set,
++	.stats_get		= stmmac_stats_get,
++	.stats_reset		= stmmac_stats_reset,
++	.dev_infos_get		= stmmac_dev_infos_get,
++	.rx_queue_setup		= stmmac_rx_queue_setup,
++	.tx_queue_setup		= stmmac_tx_queue_setup,
++	.rxq_info_get		= stmmac_rxq_info_get,
++	.txq_info_get		= stmmac_txq_info_get,
++};
++
++static int
++stmmac_platform_probe(struct rte_platform_device *pdev)
++{
++	struct rte_eth_dev *dev;
++	struct stmmac_priv *priv;
++	unsigned int i;
++
++	fprintf(stderr, "STMMAC_DEBUG: probe() called for device=%s\n", pdev->device.name);
++
++	STMMAC_PMD_INFO("entering stmmac_platform_probe(): device name=%s, num_resource=%u",
++			 pdev->device.name, pdev->num_resource);
++
++	for (i = 0; i < pdev->num_resource; i++)
++		STMMAC_MD_LOG("resource[%u] name=%s phys=0x%" PRIx64 " len=0x%" PRIx64 " va=%p",
++			      i, pdev->resource[i].name ? pdev->resource[i].name : "(null)",
++			      pdev->resource[i].mem.phys_addr, pdev->resource[i].mem.len,
++			      pdev->resource[i].mem.addr);
++
++	if (pdev->num_resource < 1 || pdev->resource[0].mem.addr == NULL) {
++		STMMAC_PMD_ERR("probe failed: no MMIO resource[0] (MAC/DMA/MTL block)");
++		return -EINVAL;
++	}fprintf(stderr, "--MD--STMMAC_DEBUG: before rte_eth_dev_allocate\n");
++
++	dev = rte_eth_dev_allocate(pdev->device.name);fprintf(stderr, "--MD--STMMAC_DEBUG: after rte_eth_dev_allocate dev=%p\n", dev);
++	if (dev == NULL) {
++		STMMAC_PMD_ERR("probe failed: rte_eth_dev_allocate() returned NULL for %s",
++				 pdev->device.name);
++		return -ENOMEM;
++	}fprintf(stderr, "--MD--STMMAC_DEBUG: before rte_zmalloc_socket\n");
++	dev->device = &pdev->device;
++
++	priv = rte_zmalloc_socket(NULL, sizeof(*priv), RTE_CACHE_LINE_SIZE,
++				   dev->data->numa_node);fprintf(stderr, "--MD--STMMAC_DEBUG: priv alloc success\n");
++	if (priv == NULL) {
++		STMMAC_PMD_ERR("probe failed: unable to allocate stmmac_priv for %s",
++				 pdev->device.name);
++		rte_eth_dev_release_port(dev);
++		return -ENOMEM;
++	}
++	dev->data->dev_private = priv;fprintf(stderr, "--MD--5 after dev_private\n");
++
++	priv->mac_base = pdev->resource[0].mem.addr;fprintf(stderr, "--MD--6 after mac_base\n");
++	/* DT reg-names = "stmmaceth", "rgmii" -> resource[1] is the RGMII IO macro */
++	if (pdev->num_resource > 1)
++		priv->rgmii_base = pdev->resource[1].mem.addr;
++	STMMAC_MD_LOG("priv=%p mac_base=%p rgmii_base=%p", priv, priv->mac_base, priv->rgmii_base);
++
++	stmmac_parse_devargs(pdev, priv);fprintf(stderr, "--MD--7 after parse_devargs\n");
++
++	if (priv->has_emac_ge_3) {
++		struct stmmac_chan_addrs ge3 = STMMAC_CHAN_ADDRS_EMAC_GE3_INIT;
++
++		STMMAC_PMD_WARN("has_emac_ge_3 stride: DMA chan 0x8100 / MTL chan 0x8000 (Shikra)");
++		priv->chan_addrs = ge3;
++	} else {
++		struct stmmac_chan_addrs generic = STMMAC_CHAN_ADDRS_GENERIC_INIT;
++
++		priv->chan_addrs = generic;
++	}fprintf(stderr, "--MD--8 after chan_addrs\n");
++
++	dev->data->mac_addrs = rte_zmalloc(NULL, RTE_ETHER_ADDR_LEN, 0);fprintf(stderr, "--MD--9 after mac_addrs alloc\n");
++	if (dev->data->mac_addrs == NULL) {
++		STMMAC_PMD_ERR("probe failed: unable to allocate mac_addrs for %s",
++				 pdev->device.name);
++		rte_free(priv);
++		rte_eth_dev_release_port(dev);
++		return -ENOMEM;
++	}
++	for (i = 0; i < RTE_ETHER_ADDR_LEN; i++)
++		dev->data->mac_addrs[0].addr_bytes[i] = 0x02;
++	rte_ether_addr_copy(&dev->data->mac_addrs[0], &priv->mac_addr);
++
++	dev->dev_ops = &stmmac_eth_ops;fprintf(stderr, "--MD--10 before probing_finish\n");
++
++	rte_eth_dev_probing_finish(dev);fprintf(stderr, "--MD--11 after probing_finish\n");
++
++	STMMAC_PMD_INFO("probe completed: device=%s, port_id=%u",
++			 pdev->device.name, dev->data->port_id);fprintf(stderr, "--MD--12 PROBE COMPELETED ---return 0 ---\n");
++
++	return 0;
++}
++
++static int
++stmmac_platform_remove(struct rte_platform_device *pdev)
++{
++	struct rte_eth_dev *dev;
++
++	dev = rte_eth_dev_allocated(pdev->device.name);
++	if (dev == NULL)
++		return 0;
++
++	stmmac_eth_close(dev);
++	rte_free(dev->data->dev_private);
++	rte_eth_dev_release_port(dev);
++
++	return 0;
++}
++
++static struct rte_platform_driver stmmac_platform_drv = {
++	.probe = stmmac_platform_probe,
++	.remove = stmmac_platform_remove,
++};
++
++RTE_PMD_REGISTER_PLATFORM(STMMAC_DRIVER_NAME, stmmac_platform_drv);
++RTE_PMD_REGISTER_ALIAS(STMMAC_DRIVER_NAME, vfio-platform);
++RTE_PMD_REGISTER_PARAM_STRING(STMMAC_DRIVER_NAME,
++	STMMAC_DEVARG_HAS_EMAC_GE_3 "=<0|1> "
++	STMMAC_DEVARG_MDIO_ADDR "=<uint16>");
++
++RTE_INIT(stmmac_pmd_registration_log)
++{
++	fprintf(stderr, "STMMAC_DEBUG: registered driver.name=%s driver.alias=%s\n",
++		stmmac_platform_drv.driver.name,
++		stmmac_platform_drv.driver.alias ? stmmac_platform_drv.driver.alias : "(null)");
++}
+diff --git a/drivers/net/stmmac/stmmac_logs.h b/drivers/net/stmmac/stmmac_logs.h
+new file mode 100644
+index 0000000000..37db8e3ea9
+--- /dev/null
++++ b/drivers/net/stmmac/stmmac_logs.h
+@@ -0,0 +1,25 @@
++/* SPDX-License-Identifier: BSD-3-Clause
++ * Copyright 2026 Qualcomm Technologies, Inc.
++ */
++
++#ifndef _STMMAC_LOGS_H_
++#define _STMMAC_LOGS_H_
++
++#include <rte_log.h>
++
++extern int stmmac_logtype_pmd;
++#define RTE_LOGTYPE_STMMAC_NET stmmac_logtype_pmd
++
++#define STMMAC_PMD_LOG(level, ...) \
++	RTE_LOG_LINE_PREFIX(level, STMMAC_NET, "%s()", __func__, __VA_ARGS__)
++
++#define STMMAC_PMD_DEBUG(fmt, ...) \
++	STMMAC_PMD_LOG(DEBUG, fmt, ## __VA_ARGS__)
++#define STMMAC_PMD_ERR(fmt, ...) \
++	STMMAC_PMD_LOG(ERR, fmt, ## __VA_ARGS__)
++#define STMMAC_PMD_INFO(fmt, ...) \
++	STMMAC_PMD_LOG(INFO, fmt, ## __VA_ARGS__)
++#define STMMAC_PMD_WARN(fmt, ...) \
++	STMMAC_PMD_LOG(WARNING, fmt, ## __VA_ARGS__)
++
++#endif /* _STMMAC_LOGS_H_ */
+diff --git a/drivers/net/stmmac/stmmac_regs.h b/drivers/net/stmmac/stmmac_regs.h
+new file mode 100644
+index 0000000000..cb2f94cdf4
+--- /dev/null
++++ b/drivers/net/stmmac/stmmac_regs.h
+@@ -0,0 +1,352 @@
++/* SPDX-License-Identifier: BSD-3-Clause
++ * Copyright 2026 Qualcomm Technologies, Inc.
++ */
++
++#ifndef _STMMAC_REGS_H_
++#define _STMMAC_REGS_H_
++
++#include <stdint.h>
++#include <rte_bitops.h>
++
++/*
++ * Register/bitfield definitions for the Synopsys DWC EQoS GMAC4 core
++ * ("stmmac" / "dwmac4" in the Linux kernel driver family).
++ *
++ * Every macro below is cited against the kernel source it was taken
++ * from, at:
++ *   drivers/net/ethernet/stmicro/stmmac/{dwmac4.h,dwmac4_dma.h,
++ *                                         dwmac4_descs.h,descs.h,
++ *                                         stmmac_mdio.c,dwmac4_core.c}
++ *
++ * Phase 1 scope: single DMA channel (channel 0), generic dwmac4
++ * register stride only. The RGMII/SDCC DLL bring-up performed by
++ * dwmac-qcom-ethqos.c (PoR tables, ethqos_configure_rgmii(), etc.)
++ * is NOT implemented here -- it is SoC-variant-specific and out of
++ * scope for Phase 1. No RGMII/SDC4 register is defined in this file.
++ */
++
++/*
++ * On real Qualcomm SoCs with has_emac_ge_3=true (e.g. emac_v4_0_0_data
++ * in dwmac-qcom-ethqos.c), the DMA/MTL per-channel stride is 0x1000
++ * instead of the generic 0x80/0x40. This override is experimental in
++ * Phase 1 (untested against silicon) and must be opted into via the
++ * "has_emac_ge_3" devarg -- the compiled-in default below is the
++ * generic dwmac4 stride.
++ */
++struct stmmac_chan_addrs {
++	uint32_t dma_chan_base;
++	uint32_t dma_chan_stride;
++	uint32_t mtl_chan_base;
++	uint32_t mtl_chan_stride;
++};
++
++/* ---------------------------------------------------------------- */
++/* MAC registers (dwmac4.h)                                          */
++/* ---------------------------------------------------------------- */
++
++#define GMAC_CONFIG			0x00000000	/* dwmac4.h:16 */
++#define GMAC_PACKET_FILTER		0x00000008	/* dwmac4.h:18 */
++#define GMAC_MDIO_ADDR			0x00000200	/* dwmac4.h:43 */
++#define GMAC_MDIO_DATA			0x00000204	/* dwmac4.h:44 */
++#define GMAC_ADDR_HIGH(reg)		(0x300 + (reg) * 8)	/* dwmac4.h:48 */
++#define GMAC_ADDR_LOW(reg)		(0x304 + (reg) * 8)	/* dwmac4.h:49 */
++
++/* GMAC_CONFIG bits (dwmac4.h:210-229) */
++#define GMAC_CONFIG_IPC			RTE_BIT32(27)	/* dwmac4.h:214 */
++#define GMAC_CONFIG_ACS			RTE_BIT32(20)	/* dwmac4.h:218 */
++#define GMAC_CONFIG_TE			RTE_BIT32(1)	/* dwmac4.h:228 */
++#define GMAC_CONFIG_RE			RTE_BIT32(0)	/* dwmac4.h:229 */
++
++/* GMAC_PACKET_FILTER bits (dwmac4.h:75) */
++#define GMAC_PACKET_FILTER_PR		RTE_BIT32(0)	/* dwmac4.h:75 */
++
++/* ---------------------------------------------------------------- */
++/* MTL registers (dwmac4.h)                                          */
++/* ---------------------------------------------------------------- */
++
++#define MTL_CHAN_BASE_ADDR		0x00000d00	/* dwmac4.h:343 */
++#define MTL_CHAN_BASE_OFFSET		0x40		/* dwmac4.h:344 */
++
++/* mirrors mtl_chanx_base_addr(), dwmac4.h:346-357 -- generic stride
++ * only (no dwmac4_addrs override); the has_emac_ge_3 0x1000 stride
++ * used by real Qualcomm SoCs (emac_v4_0_0_data) is not the Phase 1
++ * default, see struct stmmac_chan_addrs below.
++ */
++static inline uint32_t
++stmmac_mtl_chan_base(const struct stmmac_chan_addrs *addrs, uint32_t x)
++{
++	if (addrs != NULL)
++		return addrs->mtl_chan_base + x * addrs->mtl_chan_stride;
++	return MTL_CHAN_BASE_ADDR + x * MTL_CHAN_BASE_OFFSET;
++}
++
++#define MTL_CHAN_TX_OP_MODE(addrs, x) \
++	(stmmac_mtl_chan_base((addrs), (x)))			/* dwmac4.h:359 */
++#define MTL_CHAN_RX_OP_MODE(addrs, x) \
++	(stmmac_mtl_chan_base((addrs), (x)) + 0x30)		/* dwmac4.h:362 */
++
++#define MTL_OP_MODE_TSF			RTE_BIT32(1)	/* dwmac4.h TX store-forward */
++#define MTL_OP_MODE_TXQEN_MASK		(0x3 << 2)	/* GENMASK(3,2), dwmac4.h */
++#define MTL_OP_MODE_TXQEN		RTE_BIT32(3)	/* dwmac4.h */
++#define MTL_OP_MODE_RSF			RTE_BIT32(5)	/* dwmac4.h RX store-forward */
++#define MTL_OP_MODE_TQS_MASK		(0x1ffu << 16)	/* GENMASK(24,16), dwmac4.h */
++#define MTL_OP_MODE_TQS_SHIFT		16
++#define MTL_OP_MODE_RQS_MASK		(0x3ffu << 20)	/* GENMASK(29,20), dwmac4.h */
++#define MTL_OP_MODE_RQS_SHIFT		20
++
++/* ---------------------------------------------------------------- */
++/* DMA registers (dwmac4_dma.h)                                      */
++/* ---------------------------------------------------------------- */
++
++#define DMA_BUS_MODE			0x00001000	/* dwmac4_dma.h:18 */
++#define DMA_SYS_BUS_MODE		0x00001004	/* dwmac4_dma.h:19 */
++#define DMA_AXI_BUS_MODE		0x00001028	/* dwmac4_dma.h:24 */
++
++#define DMA_BUS_MODE_SFT_RESET		RTE_BIT32(0)	/* dwmac4_dma.h:32 */
++
++/* DMA_SYS_BUS_MODE bits (dwmac4_dma.h:70-81) */
++#define DMA_SYS_BUS_MB			RTE_BIT32(14)	/* dwmac4_dma.h:70 */
++#define DMA_SYS_BUS_AAL			RTE_BIT32(12)	/* dwmac4_dma.h:72 */
++#define DMA_SYS_BUS_EAME		RTE_BIT32(11)	/* dwmac4_dma.h:73 */
++#define DMA_SYS_BUS_FB			RTE_BIT32(0)	/* dwmac4_dma.h:81 */
++
++/* DMA_AXI_BUS_MODE bits (dwmac4_dma.h:59-80) */
++#define DMA_AXI_WR_OSR_LMT		(0xfu << 24)	/* GENMASK(27,24), dwmac4_dma.h:61 */
++#define DMA_AXI_WR_OSR_LMT_SHIFT	24
++#define DMA_AXI_RD_OSR_LMT		(0xfu << 16)	/* GENMASK(19,16), dwmac4_dma.h:63 */
++#define DMA_AXI_RD_OSR_LMT_SHIFT	16
++#define DMA_AXI_BLEN16			RTE_BIT32(3)	/* dwmac4_dma.h:78 */
++#define DMA_AXI_OSR_MAX			0xf		/* dwmac4_dma.h:66 */
++
++/* Per-channel DMA registers: base 0x1100 + x*0x80 (dwmac4_dma.h:96-134) */
++#define DMA_CHAN_BASE_ADDR		0x00001100	/* dwmac4_dma.h:96 */
++#define DMA_CHAN_BASE_OFFSET		0x80		/* dwmac4_dma.h:97 */
++
++/* mirrors dma_chanx_base_addr(), dwmac4_dma.h:99-110 -- generic
++ * stride only, see stmmac_chan_addrs comment above.
++ */
++static inline uint32_t
++stmmac_dma_chan_base(const struct stmmac_chan_addrs *addrs, uint32_t x)
++{
++	if (addrs != NULL)
++		return addrs->dma_chan_base + x * addrs->dma_chan_stride;
++	return DMA_CHAN_BASE_ADDR + x * DMA_CHAN_BASE_OFFSET;
++}
++
++#define DMA_CHAN_CONTROL(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)))			/* dwmac4_dma.h:114 */
++#define DMA_CHAN_TX_CONTROL(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x4)		/* dwmac4_dma.h:115 */
++#define DMA_CHAN_RX_CONTROL(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x8)		/* dwmac4_dma.h:116 */
++#define DMA_CHAN_TX_BASE_ADDR_HI(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x10)		/* dwmac4_dma.h:117 */
++#define DMA_CHAN_TX_BASE_ADDR(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x14)		/* dwmac4_dma.h:118 */
++#define DMA_CHAN_RX_BASE_ADDR_HI(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x18)		/* dwmac4_dma.h:119 */
++#define DMA_CHAN_RX_BASE_ADDR(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x1c)		/* dwmac4_dma.h:120 */
++#define DMA_CHAN_TX_END_ADDR(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x20)		/* dwmac4_dma.h:121 */
++#define DMA_CHAN_RX_END_ADDR(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x28)		/* dwmac4_dma.h:122 */
++#define DMA_CHAN_TX_RING_LEN(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x2c)		/* dwmac4_dma.h:123 */
++#define DMA_CHAN_RX_RING_LEN(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x30)		/* dwmac4_dma.h:124 */
++#define DMA_CHAN_INTR_ENA(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x34)		/* dwmac4_dma.h:125 */
++#define DMA_CHAN_STATUS(addrs, x) \
++	(stmmac_dma_chan_base((addrs), (x)) + 0x60)		/* dwmac4_dma.h:134 */
++
++/*
++ * Relative (base-independent) intra-channel offsets. The absolute
++ * DMA_CHAN_*(addrs, x) macros above already fold in the resolved
++ * per-channel base (dma_chan_base + x*dma_chan_stride). Callers that
++ * cache an already-resolved base pointer (see stmmac_tx_queue/
++ * stmmac_rx_queue chan_base in stmmac.h, which is
++ * mac_base + stmmac_dma_chan_base(addrs, 0)) must add these relative
++ * offsets instead of the absolute macros, or the channel base gets
++ * added twice.
++ */
++#define DMA_CHAN_OFF_TX_BASE_ADDR	0x14	/* dwmac4_dma.h:118 */
++#define DMA_CHAN_OFF_RX_BASE_ADDR	0x1c	/* dwmac4_dma.h:120 */
++#define DMA_CHAN_OFF_TX_END_ADDR	0x20	/* dwmac4_dma.h:121 */
++#define DMA_CHAN_OFF_RX_END_ADDR	0x28	/* dwmac4_dma.h:122 */
++#define DMA_CHAN_OFF_TX_RING_LEN	0x2c	/* dwmac4_dma.h:123 */
++#define DMA_CHAN_OFF_RX_RING_LEN	0x30	/* dwmac4_dma.h:124 */
++
++/* DMA_CHAN_TX_CONTROL bit (dwmac4_dma.h:144) */
++#define DMA_CONTROL_ST			RTE_BIT32(0)
++/* DMA_CHAN_RX_CONTROL bits (dwmac4_dma.h:147-148) */
++#define DMA_CONTROL_RPF		RTE_BIT32(31)
++#define DMA_CONTROL_SR			RTE_BIT32(0)
++
++/* DMA_CHAN_STATUS bits used for polling completion without IRQ
++ * (dwmac4_dma.h:166,169); write-1-to-clear per stmmac_main.c usage.
++ */
++#define DMA_CHAN_STATUS_RI		RTE_BIT32(6)	/* dwmac4_dma.h:166 */
++#define DMA_CHAN_STATUS_RBU		RTE_BIT32(7)	/* dwmac4_dma.h:165 */
++#define DMA_CHAN_STATUS_TI		RTE_BIT32(0)	/* dwmac4_dma.h:169 */
++#define DMA_CHAN_OFF_STATUS		0x60	/* dwmac4_dma.h:134 */
++
++/*
++ * Shikra EMAC is not DMA-coherent (no dma-coherent in DT): CPU writes to
++ * descriptors must be cleaned to PoC before the DMA reads them, and lines
++ * must be invalidated before the CPU reads DMA write-back.
++ */
++#define STMMAC_CACHE_LINE		64
++/* 16-byte descriptors per cache line; ring base is 64B-aligned (memzone) */
++#define STMMAC_DESCS_PER_LINE		(STMMAC_CACHE_LINE / 16)
++
++static inline void
++stmmac_dcache_clean(const void *addr, size_t len)
++{
++	uintptr_t p = (uintptr_t)addr & ~(uintptr_t)(STMMAC_CACHE_LINE - 1);
++	uintptr_t end = (uintptr_t)addr + len;
++
++	for (; p < end; p += STMMAC_CACHE_LINE)
++		asm volatile("dc cvac, %0" : : "r"(p) : "memory");
++	asm volatile("dsb sy" : : : "memory");
++}
++
++static inline void
++stmmac_dcache_flush(const void *addr, size_t len)
++{
++	uintptr_t p = (uintptr_t)addr & ~(uintptr_t)(STMMAC_CACHE_LINE - 1);
++	uintptr_t end = (uintptr_t)addr + len;
++
++	for (; p < end; p += STMMAC_CACHE_LINE)
++		asm volatile("dc civac, %0" : : "r"(p) : "memory");
++	asm volatile("dsb sy" : : : "memory");
++}
++
++/* ---------------------------------------------------------------- */
++/* TX descriptor bits (dwmac4_descs.h, descs.h)                      */
++/* ---------------------------------------------------------------- */
++
++/* TDES2 (read format), dwmac4_descs.h:19-30 */
++#define TDES2_BUFFER1_SIZE_MASK		0x3fffu		/* GENMASK(13,0) */
++#define TDES2_INTERRUPT_ON_COMPLETION	RTE_BIT32(31)
++
++/* TDES3 (read format), dwmac4_descs.h:33-39 */
++#define TDES3_PACKET_SIZE_MASK		0x7fffu		/* GENMASK(14,0) */
++#define TDES3_CHECKSUM_INSERTION_MASK	(0x3u << 16)	/* GENMASK(17,16) */
++#define TDES3_CHECKSUM_INSERTION_SHIFT	16
++
++/* TX_CIC_FULL: include IP header + pseudoheader checksum insertion,
++ * descs.h:184.
++ */
++#define TX_CIC_FULL			3
++
++/* TDES3 (write-back/common), dwmac4_descs.h:60-84 */
++#define TDES3_ERROR_SUMMARY		RTE_BIT32(15)	/* dwmac4_descs.h:60 */
++#define TDES3_LAST_DESCRIPTOR		RTE_BIT32(28)	/* dwmac4_descs.h:70 */
++#define TDES3_FIRST_DESCRIPTOR		RTE_BIT32(29)	/* dwmac4_descs.h:72 */
++#define TDES3_CONTEXT_TYPE		RTE_BIT32(30)	/* dwmac4_descs.h:73 */
++#define TDES3_OWN			RTE_BIT32(31)	/* dwmac4_descs.h:84 */
++
++/* ---------------------------------------------------------------- */
++/* RX descriptor bits (dwmac4_descs.h)                                */
++/* ---------------------------------------------------------------- */
++
++/* RDES1 (write-back format), dwmac4_descs.h:94-98 */
++#define RDES1_IP_HDR_ERROR		RTE_BIT32(3)
++#define RDES1_IPV4_HEADER		RTE_BIT32(4)
++#define RDES1_IPV6_HEADER		RTE_BIT32(5)
++#define RDES1_IP_CSUM_BYPASSED		RTE_BIT32(6)
++#define RDES1_IP_CSUM_ERROR		RTE_BIT32(7)
++
++/* RDES3 (write-back format), dwmac4_descs.h:122-136 */
++#define RDES3_PACKET_SIZE_MASK		0x7fffu		/* GENMASK(14,0) */
++#define RDES3_ERROR_SUMMARY		RTE_BIT32(15)
++#define RDES3_OVERFLOW_ERROR		RTE_BIT32(21)
++#define RDES3_CRC_ERROR			RTE_BIT32(24)
++#define RDES3_LAST_DESCRIPTOR		RTE_BIT32(28)
++#define RDES3_FIRST_DESCRIPTOR		RTE_BIT32(29)
++#define RDES3_CONTEXT_DESCRIPTOR	RTE_BIT32(30)
++
++/* RDES3 (read format), dwmac4_descs.h:140-142 */
++#define RDES3_BUFFER1_VALID_ADDR	RTE_BIT32(24)
++#define RDES3_INT_ON_COMPLETION_EN	RTE_BIT32(30)
++
++/* RDES3_OWN shared read/write-back, dwmac4_descs.h:145 */
++#define RDES3_OWN			RTE_BIT32(31)
++
++/* ---------------------------------------------------------------- */
++/* MDIO (stmmac_mdio.c:26-34, field layout dwmac4_core.c:1368-1375)   */
++/* ---------------------------------------------------------------- */
++
++#define MII_BUSY			RTE_BIT32(0)	/* stmmac_mdio.c:26 */
++#define MII_DATA_MASK			0xffffu		/* GENMASK(15,0), stmmac_mdio.c:28 */
++
++#define MII_GMAC4_GOC_SHIFT		2		/* stmmac_mdio.c:31 */
++#define MII_GMAC4_WRITE			(1 << MII_GMAC4_GOC_SHIFT)	/* stmmac_mdio.c:33 */
++#define MII_GMAC4_READ			(3 << MII_GMAC4_GOC_SHIFT)	/* stmmac_mdio.c:34 */
++
++/* GMAC4 MDIO address-register field layout, dwmac4_core.c:1368-1375 */
++#define MII_ADDR_SHIFT			21
++#define MII_ADDR_MASK			(0x1fu << MII_ADDR_SHIFT)	/* GENMASK(25,21) */
++#define MII_REG_SHIFT			16
++#define MII_REG_MASK			(0x1fu << MII_REG_SHIFT)	/* GENMASK(20,16) */
++#define MII_CLK_CSR_SHIFT		8
++#define MII_CLK_CSR_MASK		(0xfu << MII_CLK_CSR_SHIFT)	/* GENMASK(11,8) */
++
++/* IEEE 802.3 clause-22 standard MDIO registers, used for generic
++ * link-up polling (no vendor-specific PHY register access here).
++ */
++#define STMMAC_MII_BMCR			0x00
++#define STMMAC_MII_BMSR			0x01
++#define STMMAC_MII_BMSR_LSTATUS		RTE_BIT32(2)
++
++/*
++ * DP83867 vendor registers accessed via clause-22 MMD indirect
++ * (REGCR/ADDAR) already declared in stmmac_ethdev.c; the PHYSTS
++ * direct register (0x11) is a standard clause-22 address and can
++ * be read without MMD indirection.
++ *
++ * PHYSTS bit definitions (DP83867 datasheet Table 8):
++ *   bit 15:14  speed indication  11=1000, 10=100, 01=10 Mb/s
++ *   bit 13     duplex            1=full, 0=half
++ *   bit 2      link status       1=link up (NOT latched -- real-time)
++ */
++#define MD_DP83867_PHYSTS		0x11
++#define MD_DP83867_PHYSTS_LINK_BIT	RTE_BIT32(10)	/* dp83867.c DP83867_PHYSTS_LINK */
++#define MD_DP83867_PHYSTS_SPEED_MASK	(RTE_BIT32(15) | RTE_BIT32(14))
++#define MD_DP83867_PHYSTS_SPEED_1G	RTE_BIT32(15)	/* dp83867.c DP83867_PHYSTS_1000 */
++#define MD_DP83867_PHYSTS_SPEED_100M	RTE_BIT32(14)	/* dp83867.c DP83867_PHYSTS_100 */
++#define MD_DP83867_PHYSTS_DUPLEX_BIT	RTE_BIT32(13)
++
++/*
++ * DMA_CHAN_RX_END_ADDR_HI: upper 32 bits of the 36-bit RX tail
++ * doorbell.  Relative offset within the resolved per-channel base
++ * (chan_base already = mac_base + dma_chan_base(addrs,0)).
++ * dwmac4_dma.h:123 names this DMA_CHAN_RX_END_ADDR_HI at +0x24.
++ */
++#define DMA_CHAN_OFF_RX_END_ADDR_HI	0x24
++
++/* ---------------------------------------------------------------- */
++/* Per-channel DMA/MTL register stride override initializers         */
++/* ---------------------------------------------------------------- */
++
++/* Generic default, matches dwmac4.h/dwmac4_dma.h fallback values. */
++#define STMMAC_CHAN_ADDRS_GENERIC_INIT {		\
++	.dma_chan_base   = DMA_CHAN_BASE_ADDR,		\
++	.dma_chan_stride = DMA_CHAN_BASE_OFFSET,	\
++	.mtl_chan_base   = MTL_CHAN_BASE_ADDR,		\
++	.mtl_chan_stride = MTL_CHAN_BASE_OFFSET,	\
++}
++
++/* has_emac_ge_3 override, matches dwmac-qcom-ethqos.c emac_v4_0_0_data
++ * (dma_chan=0x8100/offset=0x1000, mtl_chan=0x8000/offset=0x1000).
++ * Experimental -- opt in via "has_emac_ge_3=1" devarg.
++ */
++#define STMMAC_CHAN_ADDRS_EMAC_GE3_INIT {		\
++	.dma_chan_base   = 0x8100,			\
++	.dma_chan_stride = 0x1000,			\
++	.mtl_chan_base   = 0x8000,			\
++	.mtl_chan_stride = 0x1000,			\
++}
++
++#endif /* _STMMAC_REGS_H_ */
+diff --git a/drivers/net/stmmac/stmmac_rxtx.c b/drivers/net/stmmac/stmmac_rxtx.c
+new file mode 100644
+index 0000000000..b5a98d3352
+--- /dev/null
++++ b/drivers/net/stmmac/stmmac_rxtx.c
+@@ -0,0 +1,449 @@
++/* SPDX-License-Identifier: BSD-3-Clause
++ * Copyright 2026 Qualcomm Technologies, Inc.
++ */
++
++#include <inttypes.h>
++#include <stdio.h>
++#include <string.h>
++
++#include <rte_common.h>
++#include <rte_branch_prediction.h>
++#include <rte_cycles.h>
++#include <rte_io.h>
++#include <rte_mbuf.h>
++
++#include "stmmac.h"
++#include "stmmac_regs.h"
++#include "stmmac_logs.h"
++
++/* MDIO busy-poll timeout, matches stmmac_mdio.c's readl_poll_timeout
++ * bound (10000 x 10us iterations there); Phase 1 uses a simple
++ * bounded spin since there is no interrupt path.
++ */
++#define STMMAC_MDIO_TIMEOUT_US		10000
++
++/*
++ * MDIO C22 read/write -- direct port of stmmac_mdio_read_c22()/
++ * stmmac_mdio_write_c22() (stmmac_mdio.c), using the GMAC4 opcode
++ * bits (MII_GMAC4_READ/WRITE) and the address/reg/clk_csr field
++ * layout from dwmac4_core.c:1368-1375. clk_csr is left at 0 (Phase 1
++ * does not compute a CSR clock divider from bus clock rate).
++ */
++uint16_t
++stmmac_mdio_read(void *mac_base, uint16_t mdio_addr, uint16_t phyreg)
++{
++	void *addr_reg = (uint8_t *)mac_base + GMAC_MDIO_ADDR;
++	void *data_reg = (uint8_t *)mac_base + GMAC_MDIO_DATA;
++	uint32_t value;
++	unsigned int timeout = STMMAC_MDIO_TIMEOUT_US;
++
++	while ((rte_read32(addr_reg) & MII_BUSY) && timeout > 0) {
++		rte_delay_us(1);
++		timeout--;
++	}
++	if (timeout == 0) {
++		STMMAC_PMD_ERR("MDIO busy timeout before read");
++		return 0xffff;
++	}
++
++	value = MII_GMAC4_READ | MII_BUSY;
++	value |= ((uint32_t)mdio_addr << MII_ADDR_SHIFT) & MII_ADDR_MASK;
++	value |= ((uint32_t)phyreg << MII_REG_SHIFT) & MII_REG_MASK;
++
++	rte_write32(value, addr_reg);
++
++	timeout = STMMAC_MDIO_TIMEOUT_US;
++	while ((rte_read32(addr_reg) & MII_BUSY) && timeout > 0) {
++		rte_delay_us(1);
++		timeout--;
++	}
++	if (timeout == 0) {
++		STMMAC_PMD_ERR("MDIO busy timeout after read");
++		return 0xffff;
++	}
++
++	return (uint16_t)(rte_read32(data_reg) & MII_DATA_MASK);
++}
++
++void
++stmmac_mdio_write(void *mac_base, uint16_t mdio_addr, uint16_t phyreg,
++		   uint16_t phydata)
++{
++	void *addr_reg = (uint8_t *)mac_base + GMAC_MDIO_ADDR;
++	void *data_reg = (uint8_t *)mac_base + GMAC_MDIO_DATA;
++	uint32_t value;
++	unsigned int timeout = STMMAC_MDIO_TIMEOUT_US;
++
++	while ((rte_read32(addr_reg) & MII_BUSY) && timeout > 0) {
++		rte_delay_us(1);
++		timeout--;
++	}
++	if (timeout == 0) {
++		STMMAC_PMD_ERR("MDIO busy timeout before write");
++		return;
++	}
++
++	rte_write32(phydata, data_reg);
++
++	value = MII_GMAC4_WRITE | MII_BUSY;
++	value |= ((uint32_t)mdio_addr << MII_ADDR_SHIFT) & MII_ADDR_MASK;
++	value |= ((uint32_t)phyreg << MII_REG_SHIFT) & MII_REG_MASK;
++
++	rte_write32(value, addr_reg);
++
++	timeout = STMMAC_MDIO_TIMEOUT_US;
++	while ((rte_read32(addr_reg) & MII_BUSY) && timeout > 0) {
++		rte_delay_us(1);
++		timeout--;
++	}
++	if (timeout == 0)
++		STMMAC_PMD_ERR("MDIO busy timeout after write");
++}
++
++/*
++ * RX burst. Single DMA channel (0), single-segment mbufs only.
++ * Descriptor ownership/status bits from dwmac4_descs.h; checksum
++ * flag mapping from RDES1 IPV4/IPV6_HEADER + IP_CSUM_ERROR only --
++ * GMAC4's RDES1 write-back layout has no L4-specific status bit, so
++ * RTE_MBUF_F_RX_L4_CKSUM_GOOD/BAD is intentionally not set here
++ * (left RTE_MBUF_F_RX_L4_CKSUM_UNKNOWN, value 0) rather than guessed.
++ *
++ * Shikra non-coherent memory fixes applied here (see commit message):
++ *   BUG-2: D-cache invalidation before descriptor read
++ *   BUG-3: full 36-bit RXTAIL doorbell (HI+LO)
++ *   BUG-4: preserve upper IOVA bits on refill (des[1])
++ */
++uint16_t
++stmmac_rx_pkt_burst(void *rx_queue, struct rte_mbuf **rx_pkts,
++		     uint16_t nb_pkts)
++{
++	struct stmmac_rx_queue *rxq = rx_queue;
++	uint16_t nb_rx = 0;
++	uint16_t tail = rxq->rx_tail;
++	uint16_t refilled = 0;
++	uint32_t ch_status;
++
++	while (nb_rx < nb_pkts) {
++		struct stmmac_desc *desc = &rxq->rx_ring[tail];
++		uint32_t des3;
++		struct rte_mbuf *rxm;
++		struct rte_mbuf *new_mb;
++		uint32_t pkt_len;
++
++		/*
++		 * BUG-2 FIX: Shikra non-coherent D-cache invalidation.
++		 *
++		 * Shikra (IQ9075) is a non-coherent platform: the DMA engine
++		 * writes descriptor write-back to physical DRAM but the CPU
++		 * ARM64 caches still hold a stale line showing OWN=1.
++		 *
++		 * rte_io_rmb() is a DSB-LD barrier -- it orders loads that
++		 * are *already visible*, but it does NOT invalidate D-cache
++		 * lines.  We must explicitly invalidate the cache line
++		 * covering this descriptor before reading des3.
++		 *
++		 * rte_clflush_cache_line() maps to:
++		 *   ARM64: DC CIVAC (Clean+Invalidate by VA to PoC)
++		 *   x86:   CLFLUSH
++		 *
++		 * Sequence (matching Linux dma_sync_single_for_cpu path):
++		 *   1. DC CIVAC on the descriptor cache line
++		 *   2. DSB-LD (rte_io_rmb) to ensure the invalidation
++		 *      completes before the subsequent load
++		 *   3. Volatile load (rte_read32) to bypass any compiler
++		 *      register caching of des3
++		 */
++		asm volatile("dc civac, %0" : : "r"(desc) : "memory"); /* arm64 clean+inval to PoC */
++		rte_io_rmb();
++		des3 = rte_read32(&desc->des[3]);
++
++		if (des3 & RDES3_OWN)
++			break;
++
++		if (des3 & RDES3_CONTEXT_DESCRIPTOR) {
++			/* Context descriptor: re-arm OWN and skip */
++			desc->des[3] = RDES3_OWN | RDES3_BUFFER1_VALID_ADDR |
++				       RDES3_INT_ON_COMPLETION_EN;
++			stmmac_dcache_clean(desc, sizeof(*desc));
++			tail = (tail + 1) % rxq->nb_desc;
++			continue;
++		}
++
++		if (des3 & RDES3_ERROR_SUMMARY) {
++			/* drop and recycle this descriptor's mbuf as-is */
++			desc->des[3] = RDES3_OWN | RDES3_BUFFER1_VALID_ADDR |
++				       RDES3_INT_ON_COMPLETION_EN;
++			stmmac_dcache_clean(desc, sizeof(*desc));
++			rxq->rx_errors++;
++			tail  = (tail + 1) % rxq->nb_desc;
++			refilled++;
++			continue;
++		}
++
++		new_mb = rte_pktmbuf_alloc(rxq->mb_pool);
++		if (unlikely(new_mb == NULL)) {
++			/* leave descriptor owned by SW; stop and retry later */
++			rxq->rx_nombuf++;
++			break;
++		}
++
++		rxm = rxq->sw_ring[tail];
++		pkt_len = des3 & RDES3_PACKET_SIZE_MASK;
++
++		/* drop stale CPU lines over the received payload */
++		stmmac_dcache_flush((uint8_t *)rxm->buf_addr + RTE_PKTMBUF_HEADROOM,
++				    pkt_len);
++
++		rxm->data_off = RTE_PKTMBUF_HEADROOM;
++		rxm->pkt_len = pkt_len;
++		rxm->data_len = pkt_len;
++		rxm->port = rxq->port_id;
++		rxm->nb_segs = 1;
++		rxm->next = NULL;
++		rxm->ol_flags = 0;
++
++		{
++			uint32_t des1 = desc->des[1];
++
++			if (des1 & (RDES1_IPV4_HEADER | RDES1_IPV6_HEADER)) {
++				if (des1 & RDES1_IP_CSUM_ERROR)
++					rxm->ol_flags |= RTE_MBUF_F_RX_IP_CKSUM_BAD;
++				else
++					rxm->ol_flags |= RTE_MBUF_F_RX_IP_CKSUM_GOOD;
++			}
++		}
++
++		rx_pkts[nb_rx++] = rxm;
++		rxq->rx_packets++;
++		rxq->rx_bytes += pkt_len;
++
++		/* Refill: install replacement mbuf into descriptor */
++		{
++		uint64_t new_iova = rte_pktmbuf_iova(new_mb);
++
++		rxq->sw_ring[tail] = new_mb;
++		/* drop any dirty lines over the new buffer before DMA writes it */
++		stmmac_dcache_flush(rte_pktmbuf_mtod(new_mb, void *),
++				    rte_pktmbuf_data_room_size(rxq->mb_pool) -
++				    RTE_PKTMBUF_HEADROOM);
++		/*
++		 * BUG-4 FIX: write the full 36-bit IOVA into des[0]/des[1].
++		 * Zeroing des[1] truncates the address to 32 bits -- all
++		 * Shikra mbufs live above 4 GiB (e.g. 0x1_018xxxxx).
++		 */
++		desc->des[0] = (uint32_t)new_iova;
++		desc->des[1] = (uint32_t)(new_iova >> 32);
++		desc->des[2] = 0;
++		rte_io_wmb();
++		desc->des[3] = RDES3_OWN | RDES3_BUFFER1_VALID_ADDR |
++			       RDES3_INT_ON_COMPLETION_EN; /* hand back to DMA */
++		stmmac_dcache_clean(desc, sizeof(*desc));
++		}
++
++		tail = (tail + 1) % rxq->nb_desc;
++		refilled++;
++	}
++
++	rxq->rx_tail = tail;
++
++	/*
++	 * RBU recovery: if the RX DMA suspended on an unavailable descriptor,
++	 * clear RBU (W1C) and re-ring the tail doorbell so it re-fetches.
++	 */
++	ch_status = rte_read32((uint8_t *)rxq->chan_base + DMA_CHAN_OFF_STATUS);
++	if (ch_status & DMA_CHAN_STATUS_RBU) {
++		rte_write32(DMA_CHAN_STATUS_RBU,
++			    (uint8_t *)rxq->chan_base + DMA_CHAN_OFF_STATUS);
++		refilled = refilled ? refilled : 1;
++	}
++
++	if (refilled > 0) {
++		/*
++		 * Tail = last descriptor handed back (one behind rx_tail).
++		 * Writing rx_tail itself makes RXTAIL == CURRXD after the DMA
++		 * catches up, which it treats as an empty ring (RBU).
++		 */
++		uint16_t last = (tail + rxq->nb_desc - 1) % rxq->nb_desc;
++		uint64_t tail_iova = rxq->rx_ring_iova +
++			(uint64_t)last * sizeof(struct stmmac_desc);
++		/*
++		 * BUG-3 FIX: write the full 36-bit tail IOVA to both
++		 * RXTAIL_HI (chan_base+0x24) and RXTAIL_LO (chan_base+0x28).
++		 *
++		 * Shikra ring IOVAs live above 4 GiB.  The previous code
++		 * only wrote the low 32 bits.  After a ring wrap the
++		 * doorbell equals RXBASE, so the DMA thinks no new
++		 * descriptors have been added and stalls permanently.
++		 *
++		 * Per DWC EQoS RM (and dwmac4_dma.h:122) the HI register
++		 * must be written before the LO register.
++		 */
++		rte_write32((uint32_t)(tail_iova >> 32),
++			    (uint8_t *)rxq->chan_base +
++			    DMA_CHAN_OFF_RX_END_ADDR_HI);
++		rte_io_wmb(); /* ensure HI lands before LO */
++		rte_write32((uint32_t)tail_iova,
++			    (uint8_t *)rxq->chan_base +
++			    DMA_CHAN_OFF_RX_END_ADDR);
++	}
++	if (nb_rx > 0)
++		fprintf(stderr, "--MD-- stmmac_rx_pkt_burst nb_rx=%u tail=%u\n",
++			nb_rx, tail);
++	return nb_rx;
++}
++
++/*
++ * TX burst. Single DMA channel (0), single-segment mbufs only
++ * (Phase 1 -- no TSO / multi-descriptor scatter chaining).
++ * Opportunistic reclaim: before using a ring slot, poll TDES3_OWN on
++ * it to free the previous mbuf, since there is no IRQ-driven TX
++ * completion callback available at the platform bus layer.
++ *
++ * Shikra non-coherent memory (same as RX):
++ *   - invalidate the slot's descriptor before reading OWN (DMA write-back)
++ *   - clean the payload before the DMA reads it
++ *   - clean the descriptor after setting OWN, before the tail doorbell
++ * TXTAIL = next free slot (one past the last queued), as in Linux
++ * stmmac_main.c; TX DMA sends CURTXD..TXTAIL-1, then idles with TBU.
++ *
++ * --MD-- debug prints: "---MD--- TX[n] ..." per stage, only when nb_tx > 0
++ * or on a stop condition, so idle polling does not flood the console.
++ */
++uint16_t
++stmmac_tx_pkt_burst(void *tx_queue, struct rte_mbuf **tx_pkts,
++		     uint16_t nb_pkts)
++{
++	struct stmmac_tx_queue *txq = tx_queue;
++	uint16_t nb_tx = 0;
++	uint16_t tail = txq->tx_tail;
++	uint16_t sent = 0;
++	static uint64_t md_calls;
++
++	md_calls++;
++	if (nb_pkts > 0 && md_calls <= 8)
++		fprintf(stderr, "---MD--- TX[1] tx pkt burst entered call=%" PRIu64 " nb_pkts=%u tail=%u\n",
++			md_calls, nb_pkts, tail);
++
++	while (nb_tx < nb_pkts) {
++		struct stmmac_desc *desc = &txq->tx_ring[tail];
++		struct rte_mbuf *txm = tx_pkts[nb_tx];
++		uint32_t tdes3;
++		uint64_t ol_flags;
++		uint64_t iova;
++
++		if (unlikely(txm->nb_segs != 1)) {
++			STMMAC_PMD_ERR("multi-segment mbuf not supported (Phase 1)");
++			fprintf(stderr, "---MD--- TX[2] STOP: multi-seg mbuf nb_segs=%u at tail=%u\n",
++				txm->nb_segs, tail);
++			break;
++		}
++
++		/*
++		 * Cache-line sharing guard (non-coherent ring, 4 x 16B descs per
++		 * 64B line). dc cvac writes back the WHOLE line, so writing slot N
++		 * while the DMA still owns a neighbour in the same line would
++		 * overwrite the DMA's OWN=0 write-back of that neighbour with our
++		 * stale OWN=1 copy -> permanent "ring full" deadlock (seen at slot
++		 * 207). Only touch a line once the DMA is done with ALL its slots.
++		 * Needed at the first slot of every line, and for the first slot
++		 * of this burst (earlier slots of its line went out last burst).
++		 * Slots written later in the same line in this burst are safe:
++		 * the DMA cannot see them until the doorbell below.
++		 */
++		if ((tail % STMMAC_DESCS_PER_LINE) == 0 || nb_tx == 0) {
++			uint16_t first = tail - (tail % STMMAC_DESCS_PER_LINE);
++			uint16_t k;
++
++			stmmac_dcache_flush(&txq->tx_ring[first],
++					    STMMAC_DESCS_PER_LINE * sizeof(*desc));
++			for (k = 0; k < STMMAC_DESCS_PER_LINE; k++) {
++				tdes3 = rte_read32(&txq->tx_ring[first + k].des[3]);
++				if (tdes3 & TDES3_OWN)
++					break;
++			}
++			if (k < STMMAC_DESCS_PER_LINE) {
++				txq->tx_ring_full++;
++				if (txq->tx_ring_full <= 8 || (txq->tx_ring_full % 100000) == 0)
++					fprintf(stderr, "---MD--- TX[2] STOP: line %u busy, slot %u still OWN=1 des3=0x%08x (want slot %u) count=%" PRIu64 "\n",
++						first / STMMAC_DESCS_PER_LINE, first + k, tdes3,
++						tail, txq->tx_ring_full);
++				break;
++			}
++		}
++		tdes3 = rte_read32(&desc->des[3]);
++		if (tdes3 & TDES3_OWN) {
++			txq->tx_ring_full++;
++			if (txq->tx_ring_full <= 8 || (txq->tx_ring_full % 100000) == 0)
++				fprintf(stderr, "---MD--- TX[2] STOP: ring full, slot %u still OWN=1 des3=0x%08x (DMA not done) count=%" PRIu64 "\n",
++					tail, tdes3, txq->tx_ring_full);
++			break;
++		}
++
++		if (txq->sw_ring[tail] != NULL) {
++			/* previous frame in this slot completed: check its status */
++			if (tdes3 & TDES3_ERROR_SUMMARY) {
++				txq->tx_errors++;
++				if (txq->tx_errors <= 8)
++					fprintf(stderr, "---MD--- TX[3] reclaim slot %u: ERROR des3=0x%08x\n",
++						tail, tdes3);
++			}
++			rte_pktmbuf_free(txq->sw_ring[tail]);
++			txq->sw_ring[tail] = NULL;
++		}
++
++		/* CPU-written payload must reach DDR before the DMA reads it */
++		stmmac_dcache_clean(rte_pktmbuf_mtod(txm, void *),
++				    rte_pktmbuf_data_len(txm));
++
++		iova = rte_pktmbuf_iova(txm);
++		desc->des[0] = (uint32_t)iova;
++		desc->des[1] = (uint32_t)(iova >> 32);	/* mbufs live above 4 GiB */
++		desc->des[2] = rte_pktmbuf_data_len(txm) & TDES2_BUFFER1_SIZE_MASK;
++
++		tdes3 = rte_pktmbuf_pkt_len(txm) & TDES3_PACKET_SIZE_MASK;
++		tdes3 |= TDES3_FIRST_DESCRIPTOR | TDES3_LAST_DESCRIPTOR;
++
++		ol_flags = txm->ol_flags;
++		if (ol_flags & (RTE_MBUF_F_TX_IP_CKSUM | RTE_MBUF_F_TX_L4_MASK))
++			tdes3 |= (TX_CIC_FULL << TDES3_CHECKSUM_INSERTION_SHIFT);
++
++		txq->sw_ring[tail] = txm;
++
++		rte_io_wmb();
++		tdes3 |= TDES3_OWN;
++		desc->des[3] = tdes3;
++		/* hand descriptor to DMA: push it to DDR */
++		stmmac_dcache_clean(desc, sizeof(*desc));
++
++		if (txq->tx_packets < 4)
++			fprintf(stderr, "---MD--- TX[4] queued slot %u iova=0x%" PRIx64 " len=%u des=%08x %08x %08x %08x\n",
++				tail, iova, rte_pktmbuf_pkt_len(txm),
++				desc->des[0], desc->des[1], desc->des[2], desc->des[3]);
++
++		txq->tx_packets++;
++		txq->tx_bytes += rte_pktmbuf_pkt_len(txm);
++
++		tail = (tail + 1) % txq->nb_desc;
++		nb_tx++;
++		sent++;
++	}
++
++	txq->tx_tail = tail;
++
++	if (sent > 0) {
++		uint64_t tail_iova = txq->tx_ring_iova +
++			(uint64_t)tail * sizeof(struct stmmac_desc);
++		rte_write32((uint32_t)tail_iova,
++			    (uint8_t *)txq->chan_base +
++			    DMA_CHAN_OFF_TX_END_ADDR);
++		/* first few doorbells, then one every 1000 to avoid a txonly flood */
++		if (txq->tx_packets <= 16 || (txq->tx_packets % 1000) < nb_tx)
++			fprintf(stderr, "---MD--- TX[5] doorbell nb_tx=%u tail=%u TXTAIL=0x%08x | CURTXD=0x%08x CH0_STATUS=0x%08x total=%" PRIu64 "\n",
++			nb_tx, tail, (uint32_t)tail_iova,
++			rte_read32((uint8_t *)txq->chan_base + 0x44),
++			rte_read32((uint8_t *)txq->chan_base + DMA_CHAN_OFF_STATUS),
++			txq->tx_packets);
++	}
++
++	return nb_tx;
++}
+-- 
+2.34.1
