@@ -47,7 +47,6 @@ repos:
 
   meta-dpdk:
     url: https://git.yoctoproject.org/meta-dpdk
-    branch: master
 
 local_conf_header:
   virtualization:
