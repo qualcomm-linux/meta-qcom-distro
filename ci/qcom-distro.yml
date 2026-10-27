@@ -14,6 +14,10 @@ repos:
 
   meta-openembedded:
     url: https://github.com/openembedded/meta-openembedded
+    patches:
+      pahole-objcopy-words:
+        repo: meta-qcom
+        path: patches/meta-oe/0001-pahole-fix-kernel-BTF-generation-when-OBJCOPY-carrie.patch
     layers:
       meta-filesystems:
       meta-gnome:
