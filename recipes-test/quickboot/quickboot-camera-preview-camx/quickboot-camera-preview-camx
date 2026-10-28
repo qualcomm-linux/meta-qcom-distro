@@ -1,0 +1,68 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# QuickBoot CAMX-to-framebuffer preview workload using GStreamer.
+# Validate camera capture, conversion, and framebuffer output. Use
+# quickboot-camera-readiness-camx to measure the first captured frame.
+
+set -eu
+
+APP_NAME="quickboot-camera-preview-camx"
+CAMERA_FORMAT="${CAMERA_FORMAT:-NV12_Q08C}"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-1080}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+CAMERA_CAPS="video/x-raw,format=${CAMERA_FORMAT},width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+PREVIEW_SINK_FORMAT="${PREVIEW_SINK_FORMAT:-BGRx}"
+PREVIEW_FB_DEVICE="${PREVIEW_FB_DEVICE:-/dev/fb0}"
+CAMX_SERVER_SOCKET=/run/cam_server/le_cam_socket
+
+log() {
+    printf '%s: %s\n' "$APP_NAME" "$*"
+}
+
+camx_wait_for_server() {
+    camx_timeout=${1:-10}
+    camx_start=$(awk '{ print $1 }' /proc/uptime)
+    log "Waiting for camera server socket: path=${CAMX_SERVER_SOCKET} timeout=${camx_timeout}s"
+
+    while :; do
+        # SO_ACCEPTCON and SOCK_STREAM identify a listening Unix socket.
+        # A filesystem socket can exist before listen(), or survive a stop.
+        if [ -S "$CAMX_SERVER_SOCKET" ] && awk -v path="$CAMX_SERVER_SOCKET" \
+            '$4 == "00010000" && $5 == "0001" && $8 == path { found = 1 }
+             END { exit !found }' /proc/net/unix; then
+            log "Camera server socket is listening: path=${CAMX_SERVER_SOCKET}"
+            return 0
+        else
+            camx_status=$?
+            if [ "$camx_status" -gt 1 ]; then
+                log "Cannot inspect camera server socket in /proc/net/unix"
+                return 1
+            fi
+        fi
+
+        camx_now=$(awk '{ print $1 }' /proc/uptime)
+        if awk -v start="$camx_start" -v now="$camx_now" \
+            -v timeout="$camx_timeout" \
+            'BEGIN { exit !(now - start >= timeout) }'; then
+            log "Timed out waiting for camera server socket: path=${CAMX_SERVER_SOCKET}"
+            return 1
+        fi
+        sleep 0.05
+    done
+}
+
+log "Preparing CAMX-to-framebuffer preview: caps=${CAMERA_CAPS}"
+camx_wait_for_server
+log "Starting CAMX-to-framebuffer preview: device=${PREVIEW_FB_DEVICE} format=${PREVIEW_SINK_FORMAT}"
+
+# Replace the shell process so signals from the test harness or systemd reach
+# gst-launch directly.
+exec env GST_REGISTRY_UPDATE=no gst-launch-1.0 -e \
+    qtiqmmfsrc name=camsrc video_0::type=preview \
+    ! "${CAMERA_CAPS}" \
+    ! qtivtransform \
+    ! "video/x-raw,format=${PREVIEW_SINK_FORMAT}" \
+    ! fbdevsink device="${PREVIEW_FB_DEVICE}"
