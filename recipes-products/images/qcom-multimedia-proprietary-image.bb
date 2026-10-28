@@ -13,6 +13,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     camx-kodiak \
     camx-lemans \
     camx-nhx \
+    camx-nord \
     camx-shikra \
     camx-talos \
     gst-plugins-imsdk-prop \
