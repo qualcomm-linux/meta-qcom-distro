@@ -1,0 +1,77 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# QuickBoot CAMX camera readiness workload. This test consumes one camera
+# frame without involving a display server or display output path.
+
+set -eu
+
+APP_NAME="quickboot-camera-readiness-camx"
+CAMERA_FORMAT="${CAMERA_FORMAT:-NV12_Q08C}"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-1080}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+CAMERA_CAPS="video/x-raw,format=${CAMERA_FORMAT},width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+CAMX_SERVER_SOCKET=/run/cam_server/le_cam_socket
+
+log() {
+    printf '%s: %s\n' "$APP_NAME" "$*"
+}
+
+boot_time() {
+    awk '{ print $1 }' /proc/uptime
+}
+
+camx_wait_for_server() {
+    camx_timeout=${1:-10}
+    camx_start=$(awk '{ print $1 }' /proc/uptime)
+    log "Waiting for camera server socket: path=${CAMX_SERVER_SOCKET} timeout=${camx_timeout}s"
+
+    while :; do
+        # SO_ACCEPTCON and SOCK_STREAM identify a listening Unix socket.
+        # A filesystem socket can exist before listen(), or survive a stop.
+        if [ -S "$CAMX_SERVER_SOCKET" ] && awk -v path="$CAMX_SERVER_SOCKET" \
+            '$4 == "00010000" && $5 == "0001" && $8 == path { found = 1 }
+             END { exit !found }' /proc/net/unix; then
+            log "Camera server socket is listening: path=${CAMX_SERVER_SOCKET}"
+            return 0
+        else
+            camx_status=$?
+            if [ "$camx_status" -gt 1 ]; then
+                log "Cannot inspect camera server socket in /proc/net/unix"
+                return 1
+            fi
+        fi
+
+        camx_now=$(awk '{ print $1 }' /proc/uptime)
+        if awk -v start="$camx_start" -v now="$camx_now" \
+            -v timeout="$camx_timeout" \
+            'BEGIN { exit !(now - start >= timeout) }'; then
+            log "Timed out waiting for camera server socket: path=${CAMX_SERVER_SOCKET}"
+            return 1
+        fi
+        sleep 0.05
+    done
+}
+
+START_TIME=$(boot_time)
+log "Starting first-frame capture: caps=${CAMERA_CAPS}"
+camx_wait_for_server
+
+# fakesink completes the pipeline after accepting one frame. A successful
+# gst-launch exit therefore represents camera capture readiness rather than
+# process startup or display-server readiness.
+if env GST_REGISTRY_UPDATE=no gst-launch-1.0 -q -e \
+    qtiqmmfsrc video_0::type=preview \
+    ! "${CAMERA_CAPS}" \
+    ! fakesink sync=false num-buffers=1; then
+    READY_TIME=$(boot_time)
+    ELAPSED=$(awk -v start="$START_TIME" -v ready="$READY_TIME" \
+        'BEGIN { printf "%.3f", ready - start }')
+    log "CAMX first frame ready: boot_time=${READY_TIME}s elapsed=${ELAPSED}s"
+else
+    status=$?
+    log "CAMX first-frame capture failed with exit code: $status"
+    exit "$status"
+fi

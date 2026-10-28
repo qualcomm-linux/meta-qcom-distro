@@ -1,0 +1,19 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Reference systemd entry point for display-independent QuickBoot CAMX camera
+# readiness validation. Disabled by default; enable it explicitly from a
+# validation or test flow.
+
+[Unit]
+Description=QuickBoot CAMX Camera First-Frame Readiness Test
+Requires=qti-cam-server.service
+After=qti-cam-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/quickboot-camera-readiness-camx
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target
