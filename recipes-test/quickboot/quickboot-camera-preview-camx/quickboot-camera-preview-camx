@@ -1,0 +1,112 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# QuickBoot CAMX-to-framebuffer preview workload using GStreamer.
+# Validate camera capture, conversion, and framebuffer output. Use
+# quickboot-camera-readiness-camx to measure the first captured frame.
+
+set -eu
+
+APP_NAME="quickboot-camera-preview-camx"
+CAMERA_FORMAT="${CAMERA_FORMAT:-NV12_Q08C}"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-1080}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+CAMERA_CAPS="video/x-raw,format=${CAMERA_FORMAT},width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+PREVIEW_SINK_FORMAT="${PREVIEW_SINK_FORMAT:-BGRx}"
+PREVIEW_FB_DEVICE="${PREVIEW_FB_DEVICE:-/dev/fb0}"
+CAMX_SERVER_SOCKET=/run/cam_server/le_cam_socket
+
+log() {
+    printf '%s: %s\n' "$APP_NAME" "$*"
+}
+
+boot_time() {
+    awk '{ print $1 }' /proc/uptime
+}
+
+CAMERA_START_TIMEOUT="${CAMERA_START_TIMEOUT:-10}"
+if ! awk -v limit="$CAMERA_START_TIMEOUT" \
+    'BEGIN { exit !(limit ~ /^[0-9]+([.][0-9]+)?$/ && limit > 0) }'; then
+    log "CAMERA_START_TIMEOUT must be a positive number of seconds"
+    exit 2
+fi
+
+START_TIME=$(boot_time)
+PIPELINE_PID=
+
+stop_pipeline() {
+    trap '' INT TERM
+    if [ -n "$PIPELINE_PID" ]; then
+        kill -s INT "$PIPELINE_PID" 2>/dev/null || :
+        wait "$PIPELINE_PID" 2>/dev/null || :
+    fi
+    exit "$1"
+}
+
+trap 'stop_pipeline 130' INT
+trap 'stop_pipeline 143' TERM
+
+startup_remaining() {
+    awk -v start="$START_TIME" -v limit="$CAMERA_START_TIMEOUT" \
+        '{ remaining = start + limit - $1
+           if (remaining <= 0) exit 1
+           printf "%.3f", remaining }' /proc/uptime
+}
+
+camx_wait_for_server() {
+    while startup_remaining >/dev/null; do
+        # Check listen(), not just a pathname that can precede it or be stale.
+        if [ -S "$CAMX_SERVER_SOCKET" ] && awk -v path="$CAMX_SERVER_SOCKET" \
+            '$4 == "00010000" && $5 == "0001" && $8 == path { found = 1 }
+             END { exit !found }' /proc/net/unix; then
+            log "Camera server socket is listening: path=${CAMX_SERVER_SOCKET}"
+            return 0
+        else
+            camx_status=$?
+            if [ "$camx_status" -gt 1 ]; then
+                log "Cannot inspect camera server socket in /proc/net/unix"
+                return 1
+            fi
+        fi
+        sleep 0.1
+    done
+    log "Timed out waiting for camera server socket: path=${CAMX_SERVER_SOCKET}"
+    return 124
+}
+
+log "Preparing CAMX-to-framebuffer preview: caps=${CAMERA_CAPS} timeout=${CAMERA_START_TIMEOUT}s"
+
+status=124
+attempt=0
+while remaining=$(startup_remaining); do
+    if [ ! -c "$PREVIEW_FB_DEVICE" ]; then
+        sleep 0.1
+        continue
+    fi
+    camx_wait_for_server || exit "$?"
+    startup_remaining >/dev/null || break
+    attempt=$((attempt + 1))
+    log "Starting CAMX-to-framebuffer preview: attempt=${attempt} device=${PREVIEW_FB_DEVICE} format=${PREVIEW_SINK_FORMAT}"
+    # Keep a running preview alive; only retry exits inside the startup window.
+    env GST_REGISTRY_UPDATE=no gst-launch-1.0 -e \
+        qtiqmmfsrc name=camsrc video_0::type=preview \
+        ! "${CAMERA_CAPS}" \
+        ! qtivtransform \
+        ! "video/x-raw,format=${PREVIEW_SINK_FORMAT}" \
+        ! fbdevsink device="${PREVIEW_FB_DEVICE}" &
+    PIPELINE_PID=$!
+    if wait "$PIPELINE_PID"; then
+        PIPELINE_PID=
+        exit 0
+    else
+        status=$?
+    fi
+    PIPELINE_PID=
+    log "Preview attempt ${attempt} failed: exit=${status}"
+    sleep 0.1
+done
+
+log "Preview failed; startup retry window (${CAMERA_START_TIMEOUT}s) expired: framebuffer=${PREVIEW_FB_DEVICE}"
+exit "$status"
