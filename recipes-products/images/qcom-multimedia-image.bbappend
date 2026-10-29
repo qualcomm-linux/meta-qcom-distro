@@ -38,11 +38,16 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     firmware-qcom-boot-qcs615:LICENSE.qcom-2 \
     firmware-qcom-boot-qcs6490:LICENSE.qcom-2 \
     firmware-qcom-boot-qcs8300:LICENSE.qcom-2 \
+    firmware-qcom-boot-qcs8550:LICENSE.qcom-2 \
     firmware-qcom-boot-qcs9100:LICENSE.qcom-2 \
     firmware-qcom-boot-qrb2210:LICENSE.qcom-2 \
     firmware-qcom-boot-qrb2210-rb1:LICENSE.qcom \
     firmware-qcom-boot-shikra:LICENSE.qcom-2 \
     firmware-qcom-boot-sm8750:LICENSE.qcom-2 \
+    firmware-qcom-sm8550-hdk:LICENSE.qcom-2 \
+    linux-firmware-qcom-sm8550-audio:LICENSE.qcom-2 \
+    linux-firmware-qcom-sm8550-compute:LICENSE.qcom-2 \
+    linux-firmware-qcom-sm8550-ipa:LICENSE.qcom-2 \
     qtee-tas:LICENSE.qcom-2 \
     trusted-firmware-a-qcom:LICENSE.qcom \
     trusted-firmware-a-qcom-rb3gen2:LICENSE.qcom \
