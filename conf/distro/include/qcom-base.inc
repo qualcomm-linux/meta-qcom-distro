@@ -67,6 +67,7 @@ BUILDHISTORY_COMMIT = "1"
 
 # Disable weston idle timeout
 PACKAGECONFIG:append:pn-weston-init = " no-idle-timeout"
+PACKAGECONFIG:append:pn-weston = " rdp headless"
 
 PACKAGECONFIG:append:pn-qemu = " pixman virtfs vnc-jpeg vnc-sasl"
 
