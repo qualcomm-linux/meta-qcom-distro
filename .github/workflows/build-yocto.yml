@@ -14,6 +14,9 @@ on:
         description: "URL to retrieve build artifacts"
         value: ${{ jobs.create-output.outputs.url }}
 
+permissions:
+  contents: read
+
 # Concurrency is used to prevent multiple workflows from running for the same PR
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('push-{0}', github.sha) }}
@@ -22,6 +25,7 @@ concurrency:
 env:
   CACHE_DIR: /efsx/qli/meta-qcom
   KAS_CLONE_DEPTH: 1
+  KAS_CONTAINER: ${{ github.workspace }}/kas-container
   KAS_CONTAINER_IMAGE: ghcr.io/siemens/kas/kas@sha256:3f3d3257e8d4ca3adfcb2e0025e6da24339fb8d68a6999ca36c37381351582d5 # 5.5-9-g0555188
 
 jobs:
@@ -29,10 +33,12 @@ jobs:
     if: github.repository_owner == 'qualcomm-linux'
     runs-on: [self-hosted, qcom-u2404, amd64]
     steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - name: Setting up kas-container
         run: |
-          KAS_CONTAINER=$RUNNER_TEMP/kas-container
-          echo "KAS_CONTAINER=$KAS_CONTAINER" >> $GITHUB_ENV
           docker create --name kas ${KAS_CONTAINER_IMAGE}
           docker cp kas:/usr/local/bin/kas-container $KAS_CONTAINER
           LATEST=$(git ls-remote --tags --refs --sort="v:refname" https://github.com/siemens/kas | tail -n1 | sed 's/.*\///')
@@ -40,25 +46,18 @@ jobs:
             echo "Version "${LATEST}" of kas is available, please update "KAS_CONTAINER_IMAGE: $KAS_CONTAINER_IMAGE""
           fi
 
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
       - name: Run kas lock
         run: |
           ${KAS_CONTAINER} lock --update ci/base.yml:ci/qcom-distro.yml
 
-      - name: Upload kas lockfile
+      - name: Upload kas
         uses: actions/upload-artifact@v6
         with:
-          name: kas-lockfile
-          path: ci/*.lock.yml
-
-      - name: Upload kas-container
-        uses: actions/upload-artifact@v6
-        with:
-          name: kas-container
-          path: ${{ env.KAS_CONTAINER }}
+          name: kas
+          if-no-files-found: error
+          path: |
+            ci/*.lock.yml
+            kas-container
 
   yocto-run-checks:
     needs: kas-setup
@@ -69,22 +68,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Download kas lockfile
+      - name: Download kas
         uses: actions/download-artifact@v7
         with:
-          name: kas-lockfile
-          path: ci
-
-      - name: Download kas-container
-        uses: actions/download-artifact@v7
-        with:
-          name: kas-container
-          path: ${{ runner.temp }}
+          name: kas
 
       - name: Setting up kas-container
         run: |
-          KAS_CONTAINER=$RUNNER_TEMP/kas-container
-          echo "KAS_CONTAINER=$KAS_CONTAINER" >> $GITHUB_ENV
           chmod +x $KAS_CONTAINER
 
       - name: Run yocto-check-layer
@@ -95,46 +85,119 @@ jobs:
         run: |
           ci/kas-container-shell-helper.sh ci/yocto-patchreview.sh
 
-  compile_warm_up:
-    needs: kas-setup
+  compile-env:
     if: github.repository_owner == 'qualcomm-linux'
-    runs-on: [self-hosted, qcom-u2404, amd64]
+    runs-on: ubuntu-latest
+    outputs:
+      CACHE_DIR: ${{ steps.compile_env.outputs.CACHE_DIR }}
+    steps:
+      # the env context is not available in the inputs of a reusable workflow call
+      - name: Setup compile variables
+        id: compile_env
+        run: |
+          echo "CACHE_DIR=${CACHE_DIR}" >> $GITHUB_OUTPUT
+
+  # Builds the common core (native tools, toolchain and the qcom-distro
+  # images of the generic machine) once, so the compile_stage2 seeds reuse it
+  # instead of each building it.
+  compile_stage1:
+    needs: [kas-setup, compile-env]
+    if: github.repository_owner == 'qualcomm-linux'
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+    uses: $/.github/workflows/compile.yml
+    with:
+      name: qcom-armv8a/qcom-distro
+      world: false
+      machine: 'qcom-armv8a'
+      distro_yaml: ':ci/qcom-distro.yml'
+      distro_name: 'qcom-distro'
+      kernel_yaml: ''
+      kernel_dirname: ''
+      cache_dir: ${{ needs.compile-env.outputs.CACHE_DIR }}
+      profile: ${{ inputs.profile }}
+
+  # One seed build per distro family and target tune.
+  compile_stage2:
+    needs: [compile_stage1, compile-env]
+    if: github.repository_owner == 'qualcomm-linux'
+    permissions:
+      contents: read
+      packages: read
+      actions: read
     strategy:
       fail-fast: true
       matrix:
         machine:
           - glymur-crd
-          - qcom-armv8a
           - rb3gen2-core-kit
         distro:
           - name: qcom-distro
             yamlfile: ':ci/qcom-distro.yml'
+          - name: qcom-distro-catchall
+            yamlfile: ':ci/qcom-distro-catchall.yml'
         kernel:
           - type: default
             dirname: ""
             yamlfile: ""
-    name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
+        include:
+          # qcom-armv8a qcom-distro is built by compile_stage1
+          - machine: qcom-armv8a
+            distro:
+                name: qcom-distro-catchall
+                yamlfile: ':ci/qcom-distro-catchall.yml'
+            kernel:
+                type: default
+                dirname: ""
+                yamlfile: ""
+    uses: $/.github/workflows/compile.yml
+    with:
+      name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
+      # One world build per machine and distro family is enough for compile
+      # coverage: qcom-distro-catchall is qcom-distro with selinux and sota
+      # added (sota only opts out ptest), so the remaining distro and kernel
+      # combinations only repeat already-covered world builds. qcom-armv7a has no
+      # qcom-distro-catchall variant, so its qcom-distro build is the
+      # distro-family world build for that machine.
+      world: ${{ (matrix.distro.name == 'qcom-distro-catchall' || (matrix.machine == 'qcom-armv7a' && matrix.distro.name == 'qcom-distro')) && matrix.kernel.type == 'default' }}
+      machine: ${{matrix.machine}}
+      distro_yaml: ${{matrix.distro.yamlfile}}
+      distro_name: ${{matrix.distro.name}}
+      kernel_yaml: ${{matrix.kernel.yamlfile}}
+      kernel_dirname: ${{matrix.kernel.dirname}}
+      cache_dir: ${{ needs.compile-env.outputs.CACHE_DIR }}
+      profile: ${{ inputs.profile }}
 
-      - name: Run kas build
-        uses: ./.github/actions/compile
-        with:
-          machine: ${{matrix.machine}}
-          distro_yaml: ${{matrix.distro.yamlfile}}
-          distro_name: ${{matrix.distro.name}}
-          kernel_yaml: ${{matrix.kernel.yamlfile}}
-          kernel_dirname: ${{matrix.kernel.dirname}}
-          cache_dir: ${{env.CACHE_DIR}}
-
-  compile:
-    needs: compile_warm_up
+  compile_sdk:
+    needs: [compile_stage2, compile-env]
     if: github.repository_owner == 'qualcomm-linux'
-    runs-on: [self-hosted, qcom-u2404, amd64]
-    outputs:
-      url: ${{ steps.compile_kas.outputs.url }}
+    permissions:
+      contents: read
+      packages: read
+      actions: read
+    uses: $/.github/workflows/compile.yml
+    with:
+      name: qcom-armv8a/qcom-distro-sdk
+      sdk: true
+      target: false
+      world: false
+      machine: 'qcom-armv8a'
+      distro_yaml: ':ci/qcom-distro.yml'
+      distro_name: 'qcom-distro-sdk'
+      kernel_yaml: ''
+      kernel_dirname: ''
+      cache_dir: ${{ needs.compile-env.outputs.CACHE_DIR }}
+      profile: ${{ inputs.profile }}
+
+  compile_stage3:
+    needs: [compile_stage2, compile-env]
+    if: github.repository_owner == 'qualcomm-linux'
+    permissions:
+      contents: read
+      packages: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -159,7 +222,8 @@ jobs:
           - name: qcom-distro-catchall
             yamlfile: ':ci/qcom-distro-catchall.yml'
           - name: performance
-            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml'
+            yamlfile: ':ci/qcom-distro.yml:ci/performance.yml:ci/nospdx.yml'
+            profile: full
         kernel:
           - type: default
             dirname: ""
@@ -171,10 +235,15 @@ jobs:
             dirname: "_linux-qcom-rt-6.18"
             yamlfile: ":ci/linux-qcom-rt-6.18.yml"
         exclude:
-          # Exclude jobs from compile_warm_up
+          # Exclude jobs from compile_stage1 and compile_stage2
           - machine: glymur-crd
             distro:
                 name: qcom-distro
+            kernel:
+                type: default
+          - machine: glymur-crd
+            distro:
+                name: qcom-distro-catchall
             kernel:
                 type: default
           - machine: qcom-armv8a
@@ -182,9 +251,19 @@ jobs:
                 name: qcom-distro
             kernel:
                 type: default
+          - machine: qcom-armv8a
+            distro:
+                name: qcom-distro-catchall
+            kernel:
+                type: default
           - machine: rb3gen2-core-kit
             distro:
                 name: qcom-distro
+            kernel:
+                type: default
+          - machine: rb3gen2-core-kit
+            distro:
+                name: qcom-distro-catchall
             kernel:
                 type: default
           # qcom-distro coverage is enough for the non-default qcom-next
@@ -274,29 +353,36 @@ jobs:
                 type: default
                 dirname: ""
                 yamlfile: ""
-    name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
-    steps:
-      - name: checkout
-        if: (inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')) && (inputs.profile == 'weekly' || matrix.distro.profile != 'weekly')
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Run kas build
-        if: (inputs.profile != 'pr' || (matrix.distro.name != 'debug' && matrix.distro.name != 'performance')) && (inputs.profile == 'weekly' || matrix.distro.profile != 'weekly')
-        uses: ./.github/actions/compile
-        id: compile_kas
-        with:
-          machine: ${{matrix.machine}}
-          distro_yaml: ${{matrix.distro.yamlfile}}
-          distro_name: ${{matrix.distro.name}}
-          kernel_yaml: ${{matrix.kernel.yamlfile}}
-          kernel_dirname: ${{matrix.kernel.dirname}}
-          cache_dir: ${{env.CACHE_DIR}}
+    uses: $/.github/workflows/compile.yml
+    with:
+      name: ${{ matrix.machine }}/${{ matrix.distro.name }}${{ matrix.kernel.dirname }}
+      # Which profiles build this entry. Entries without distro.profile are
+      # built by every profile; an entry marked with distro.profile is built by
+      # that profile and by the wider ones above it, ordered pr < full (push
+      # and nightly) < weekly. Add "profile: weekly" to the distro entry of a
+      # target that is too expensive to build every night.
+      enabled: ${{ (matrix.distro.profile || 'any') == 'any' || (matrix.distro.profile == 'full' && inputs.profile != 'pr') || (matrix.distro.profile == 'weekly' && inputs.profile == 'weekly') }}
+      # One world build per machine and distro family is enough for compile
+      # coverage: qcom-distro-catchall is qcom-distro with selinux and sota
+      # added (sota only opts out ptest), so the remaining distro and kernel
+      # combinations only repeat already-covered world builds. qcom-armv7a has no
+      # qcom-distro-catchall variant, so its qcom-distro build is the
+      # distro-family world build for that machine.
+      world: ${{ (matrix.distro.name == 'qcom-distro-catchall' || (matrix.machine == 'qcom-armv7a' && matrix.distro.name == 'qcom-distro')) && matrix.kernel.type == 'default' }}
+      machine: ${{matrix.machine}}
+      distro_yaml: ${{matrix.distro.yamlfile}}
+      distro_name: ${{matrix.distro.name}}
+      kernel_yaml: ${{matrix.kernel.yamlfile}}
+      kernel_dirname: ${{matrix.kernel.dirname}}
+      cache_dir: ${{ needs.compile-env.outputs.CACHE_DIR }}
+      profile: ${{ inputs.profile }}
 
   publish_summary:
-    needs: compile
+    needs: [compile_stage3, compile_sdk]
     if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-latest
     steps:
       - uses: qualcomm-linux/meta-qcom/.github/actions/print-build-output@master
@@ -306,15 +392,16 @@ jobs:
 
   build_successful:
     if: ${{ always() && github.repository_owner == 'qualcomm-linux' }}
-    needs: compile
+    needs: [compile_stage3, compile_sdk]
     runs-on: ubuntu-latest
     steps:
       - name: Build completed successfully
         env:
-          COMPILE_RESULT: ${{ needs.compile.result }}
+          COMPILE_RESULT: ${{ needs.compile_stage3.result }}
+          COMPILE_SDK_RESULT: ${{ needs.compile_sdk.result }}
         run: |
-          if [ "${COMPILE_RESULT}" != "success" ]; then
-            echo "compile result was ${COMPILE_RESULT}"
+          if [ "${COMPILE_RESULT}" != "success" ] || [ "${COMPILE_SDK_RESULT}" != "success" ]; then
+            echo "compile result was ${COMPILE_RESULT}, compile_sdk result was ${COMPILE_SDK_RESULT}"
             exit 1
           fi
           echo "All compile matrix jobs succeeded and artifacts uploaded to S3 bucket"
