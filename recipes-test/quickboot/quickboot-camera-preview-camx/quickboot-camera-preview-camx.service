@@ -1,0 +1,22 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# Reference systemd entry point for QuickBoot CAMX camera preview validation
+# through the Linux framebuffer. Disabled by default; enable it explicitly
+# from a validation or test flow.
+
+[Unit]
+Description=QuickBoot CAMX Camera-to-Framebuffer Preview Test
+Requires=qti-cam-server.service
+After=qti-cam-server.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/quickboot-camera-preview-camx
+# gst-launch -e handles SIGINT by sending EOS before tearing down the pipeline.
+# This releases the CAMX track and DMA buffers before qti-cam-server stops.
+KillSignal=SIGINT
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
