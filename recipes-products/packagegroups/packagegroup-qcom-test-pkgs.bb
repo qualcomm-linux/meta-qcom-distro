@@ -10,6 +10,7 @@ PACKAGES = "${PN}"
 RDEPENDS:${PN} = "\
     coreutils \
     expect \
+    ${@bb.utils.contains("LICENSE_FLAGS_ACCEPTED", "commercial", "ffmpeg", "", d)} \
     igt-gpu-tools-tests \
     iperf3 \
     iproute2 \
