@@ -1,1 +1,1 @@
-PACKAGECONFIG:append:qcom-distro = " legacy"
+PACKAGECONFIG:append:class-target:qcom-distro = " legacy"
