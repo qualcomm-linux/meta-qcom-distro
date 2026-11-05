@@ -7,6 +7,7 @@ SRC_URI:append:qcom-distro = " \
     file://0005-xdg-Add-interface-for-mounting-on-Downloads-director.patch \
     file://0006-docker-Add-tunable-for-mounting-on-XDG-Downloads-dir.patch \
     file://0007-policy-tpm2-fix-tpm2-abrmd-D-Bus-communication-under-enf.patch \
+    file://0008-unconfined-allow-perf-event-access-for-unconfined-domains.patch \
 "
 
 # Enable Docker-related SELinux booleans when the virtualization distro feature is enabled.

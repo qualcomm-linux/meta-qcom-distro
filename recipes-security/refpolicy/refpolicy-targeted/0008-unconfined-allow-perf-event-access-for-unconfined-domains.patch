@@ -1,0 +1,35 @@
+From 6072cfa851a3598bfa86622dff9c680c2e662901 Mon Sep 17 00:00:00 2001
+From: Wenwen Fu <wenwfu@qti.qualcomm.com>
+Date: Thu, 5 Nov 2026 10:02:03 +0800
+Subject: [PATCH] unconfined: allow perf event access for unconfined domains
+
+Unconfined domains have the perfmon capability but lack complete
+perf_event permissions. This prevents perf from collecting performance
+counters and tracepoints with SELinux enforcing.
+
+Allow unconfined domains to open, read and control their own perf
+events, including CPU, kernel and tracepoint collection. Add the rule
+to unconfined_domain_noaudit() alongside the other self access rules.
+
+Upstream-Status: Backport [https://github.com/SELinuxProject/refpolicy/commit/6072cfa851a3598bfa86622dff9c680c2e662901]
+
+Assisted-by: Codex:GPT-6
+Signed-off-by: Wenwen Fu <wenwfu@qti.qualcomm.com>
+---
+ policy/modules/system/unconfined.if | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/policy/modules/system/unconfined.if b/policy/modules/system/unconfined.if
+index 6c48561238..c627d38dcf 100644
+--- a/policy/modules/system/unconfined.if
++++ b/policy/modules/system/unconfined.if
+@@ -59,6 +59,9 @@ interface(`unconfined_domain_noaudit',`
+ 	# for io_uring
+ 	allow $1 self:anon_inode { create map read write };
+ 
++	# Access own perf events
++	allow $1 self:perf_event { open cpu kernel tracepoint read write };
++
+ 	# Userland object managers
+ 	allow $1 self:nscd { admin getgrp gethost getpwd getserv getstat shmemgrp shmemhost shmempwd shmemserv };
+ 	allow $1 self:dbus { acquire_svc send_msg };
