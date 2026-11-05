@@ -1,0 +1,3 @@
+# conf.d/containerd-cfs.toml registers cfs; other conf.d files extend settings.
+version = 2
+imports = ["/etc/containerd/conf.d/*.toml"]
