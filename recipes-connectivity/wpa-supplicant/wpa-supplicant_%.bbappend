@@ -1,8 +1,4 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# use latest version from the lts-connectivity-mixin layer
+DEFAULT_PREFERENCE:layer-lts-connectivity-mixin:qcom-distro = "1"
 
-SRC_URI:append:qcom-distro = " \
-    file://0001-wpa_supplicant-Enable-MBO-in-defconfig-by-default.patch \
-    file://0001-wpa_supplicant-Enable-WNM-in-defconfig-by-default.patch \
-"
-
-PACKAGECONFIG:append:qcom-distro = " suiteb"
+PACKAGECONFIG:append:qcom-distro = " suiteb wnm mbo"
