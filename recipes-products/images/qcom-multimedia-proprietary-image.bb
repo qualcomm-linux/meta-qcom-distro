@@ -24,6 +24,8 @@ CORE_IMAGE_BASE_INSTALL += " \
     qcom-adreno \
     qcom-sensors-binaries \
     quickboot-camera-camx \
+    quickboot-camera-preview-camx \
+    quickboot-camera-readiness-camx \
 "
 
 CORE_IMAGE_BASE_INSTALL:append = " \
