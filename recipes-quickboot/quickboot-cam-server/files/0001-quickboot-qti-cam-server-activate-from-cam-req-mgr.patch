@@ -1,0 +1,38 @@
+From 642578ad64d9e6b596cd8d760769a0547607e0bd Mon Sep 17 00:00:00 2001
+From: Wenwen Fu <wenwfu@qti.qualcomm.com>
+Date: Tue, 13 Oct 2026 10:00:00 +0800
+Subject: [PATCH] qmmf-server: activate camera server from cam-req-mgr
+
+The normal camera server unit starts from multi-user.target and inherits the
+default service dependency on sysinit.target and basic.target. This delays
+camera-server startup after CAMX has registered the camera-request-manager
+node.
+
+Make the unit suitable for QuickBoot activation. The unit is wanted by the
+cam-req-mgr udev add event and starts after its stable device alias becomes
+active. Keep explicit shutdown ordering because DefaultDependencies=no
+removes the normal service shutdown dependencies.
+
+Upstream-Status: Inappropriate [QuickBoot activation is distro policy]
+
+Signed-off-by: Wenwen Fu <wenwfu@qti.qualcomm.com>
+---
+ qmmf-server/service/qti-cam-server-base.service.in | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/qmmf-server/service/qti-cam-server-base.service.in b/qmmf-server/service/qti-cam-server-base.service.in
+index 5ecd8eb..0baccec 100644
+--- a/qmmf-server/service/qti-cam-server-base.service.in
++++ b/qmmf-server/service/qti-cam-server-base.service.in
+@@ -33,7 +33,10 @@
+ Description= Camera Server Service
+ Documentation=https://github.com/qualcomm/camera-service
+ SourcePath=/usr/bin/qti-cam-server
+-After=var-volatile-lib.service
++DefaultDependencies=no
++After=dev-cam_req_mgr.device
++Conflicts=shutdown.target
++Before=shutdown.target
+ 
+ [Service]
+ User=@CAM_SERVER_USER@
