@@ -1,0 +1,85 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# QuickBoot open-source CAMSS camera readiness workload. This test consumes
+# one camera frame without involving a display server or display output path.
+
+set -eu
+
+APP_NAME="quickboot-camera-readiness-camss"
+CAMERA_WIDTH="${CAMERA_WIDTH:-1920}"
+CAMERA_HEIGHT="${CAMERA_HEIGHT:-1080}"
+CAMERA_FRAMERATE="${CAMERA_FRAMERATE:-30/1}"
+LIBCAMERA_SOFTISP_MODE="${LIBCAMERA_SOFTISP_MODE:-cpu}"
+CAMERA_CAPS="video/x-raw,width=${CAMERA_WIDTH},height=${CAMERA_HEIGHT},framerate=${CAMERA_FRAMERATE}"
+
+log() {
+    printf '%s: %s\n' "$APP_NAME" "$*"
+}
+
+boot_time() {
+    awk '{ print $1 }' /proc/uptime
+}
+
+CAMERA_START_TIMEOUT="${CAMERA_START_TIMEOUT:-10}"
+if ! awk -v limit="$CAMERA_START_TIMEOUT" \
+    'BEGIN { exit !(limit ~ /^[0-9]+([.][0-9]+)?$/ && limit > 0) }'; then
+    log "CAMERA_START_TIMEOUT must be a positive number of seconds"
+    exit 2
+fi
+
+START_TIME=$(boot_time)
+PIPELINE_PID=
+
+stop_pipeline() {
+    trap '' INT TERM
+    if [ -n "$PIPELINE_PID" ]; then
+        kill -s INT "$PIPELINE_PID" 2>/dev/null || :
+        wait "$PIPELINE_PID" 2>/dev/null || :
+    fi
+    exit "$1"
+}
+
+trap 'stop_pipeline 130' INT
+trap 'stop_pipeline 143' TERM
+
+startup_remaining() {
+    awk -v start="$START_TIME" -v limit="$CAMERA_START_TIMEOUT" \
+        '{ remaining = start + limit - $1
+           if (remaining <= 0) exit 1
+           printf "%.3f", remaining }' /proc/uptime
+}
+
+log "Starting first-frame capture: caps=${CAMERA_CAPS} timeout=${CAMERA_START_TIMEOUT}s"
+
+status=124
+attempt=0
+while remaining=$(startup_remaining); do
+    attempt=$((attempt + 1))
+    log "First-frame capture attempt: ${attempt}"
+    # Bound a stalled capture as well as failures before devices are ready.
+    timeout --signal=INT --kill-after=2 "$remaining" \
+        env "LIBCAMERA_SOFTISP_MODE=${LIBCAMERA_SOFTISP_MODE}" \
+        GST_REGISTRY_UPDATE=no gst-launch-1.0 -q -e \
+        libcamerasrc \
+        ! "${CAMERA_CAPS}" \
+        ! fakesink sync=false num-buffers=1 &
+    PIPELINE_PID=$!
+    if wait "$PIPELINE_PID"; then
+        PIPELINE_PID=
+        READY_TIME=$(boot_time)
+        ELAPSED=$(awk -v start="$START_TIME" -v ready="$READY_TIME" \
+            'BEGIN { printf "%.3f", ready - start }')
+        log "CAMSS first frame ready: boot_time=${READY_TIME}s elapsed=${ELAPSED}s attempts=${attempt}"
+        exit 0
+    else
+        status=$?
+    fi
+    PIPELINE_PID=
+    log "First-frame capture attempt ${attempt} failed: exit=${status}"
+    sleep 0.1
+done
+
+log "First-frame capture did not complete within ${CAMERA_START_TIMEOUT}s"
+exit "$status"
