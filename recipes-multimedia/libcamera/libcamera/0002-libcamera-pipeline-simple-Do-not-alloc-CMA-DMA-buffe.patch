@@ -1,0 +1,94 @@
+From ffcea89c5cb3e913d43c2c131b8eab2e99436007 Mon Sep 17 00:00:00 2001
+From: Hans de Goede <johannes.goede@oss.qualcomm.com>
+Date: Fri, 30 Oct 2026 15:19:36 +0100
+Subject: [PATCH 2/2] libcamera: pipeline: simple: Do not alloc CMA DMA-buffers
+ for camss and ipu6/7
+
+On Qualcomm platforms with the camss CSI receiver block it is not necessary
+to allocate DMA-buffers from CMA and doing so may lead to starvation of
+the CMA pool for other processes.
+
+On Intel IPU6 / IPU7 there typically is no CMA memory reservation at all so
+trying to use memory from there is not useful.
+
+Reported-by: Wenmeng Liu <wenmeng.liu@oss.qualcomm.com>
+Closes: https://lists.libcamera.org/pipermail/libcamera-devel/2026-September/062125.html
+Reviewed-by: Milan Zamazal <mzamazal@redhat.com>
+Signed-off-by: Hans de Goede <johannes.goede@oss.qualcomm.com>
+Upstream-Status: Submitted [https://lists.libcamera.org/pipermail/libcamera-devel/2026-October/063203.html]
+---
+ src/libcamera/pipeline/simple/simple.cpp | 25 ++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
+index d2ce65978..765dded00 100644
+--- a/src/libcamera/pipeline/simple/simple.cpp
++++ b/src/libcamera/pipeline/simple/simple.cpp
+@@ -251,20 +251,22 @@ struct SimplePipelineInfo {
+ 	 * The Software ISP can't be used together with the converters.
+ 	 */
+ 	bool swIspEnabled;
++	/* Flags controlling Software ISP behavior. */
++	SoftwareIsp::SoftwareIspFlags swIspFlags;
+ };
+ 
+ namespace {
+ 
+ static const SimplePipelineInfo supportedDevices[] = {
+-	{ "dcmipp", {}, false },
+-	{ "imx7-csi", { { "pxp", 1 } }, true },
+-	{ "intel-ipu6", {}, true },
+-	{ "intel-ipu7", {}, true },
+-	{ "j721e-csi2rx", {}, true },
+-	{ "mtk-seninf", { { "mtk-mdp", 3 } }, false },
+-	{ "mxc-isi", {}, false },
+-	{ "qcom-camss", {}, true },
+-	{ "sun6i-csi", {}, false },
++	{ "dcmipp", {}, false, {} },
++	{ "imx7-csi", { { "pxp", 1 } }, true, SoftwareIsp::SoftwareIspFlag::AllocCmaDmaBuffers },
++	{ "intel-ipu6", {}, true, {} },
++	{ "intel-ipu7", {}, true, {} },
++	{ "j721e-csi2rx", {}, true, SoftwareIsp::SoftwareIspFlag::AllocCmaDmaBuffers },
++	{ "mtk-seninf", { { "mtk-mdp", 3 } }, false, {} },
++	{ "mxc-isi", {}, false, {} },
++	{ "qcom-camss", {}, true, {} },
++	{ "sun6i-csi", {}, false, {} },
+ };
+ 
+ bool isRaw(const StreamConfiguration &cfg)
+@@ -427,6 +429,7 @@ public:
+ 	V4L2Subdevice *subdev(const MediaEntity *entity);
+ 	std::shared_ptr<MediaDevice> converter() { return converter_; }
+ 	bool swIspEnabled() const { return swIspEnabled_; }
++	SoftwareIsp::SoftwareIspFlags swIspFlags() const { return swIspFlags_; }
+ 
+ protected:
+ 	int queueRequestDevice(Camera *camera, Request *request) override;
+@@ -460,6 +463,7 @@ private:
+ 
+ 	std::shared_ptr<MediaDevice> converter_;
+ 	bool swIspEnabled_;
++	SoftwareIsp::SoftwareIspFlags swIspFlags_;
+ };
+ 
+ /* -----------------------------------------------------------------------------
+@@ -616,7 +620,7 @@ int SimpleCameraData::init()
+ 	 */
+ 	if (!converter_ && pipe->swIspEnabled()) {
+ 		swIsp_ = std::make_unique<SoftwareIsp>(pipe, sensor_.get(),
+-						       SoftwareIsp::SoftwareIspFlag::AllocCmaDmaBuffers,
++						       pipe->swIspFlags(),
+ 						       &controlInfo_);
+ 		if (!swIsp_->isValid()) {
+ 			LOG(SimplePipeline, Warning)
+@@ -1893,6 +1897,7 @@ bool SimplePipelineHandler::matchDevice(std::shared_ptr<MediaDevice> media,
+ 	}
+ 
+ 	swIspEnabled_ = info.swIspEnabled;
++	swIspFlags_ = info.swIspFlags;
+ 	const GlobalConfiguration &configuration = cameraManager()->_d()->configuration();
+ 	for (const ValueNode &entry :
+ 	     configuration.configuration()["pipelines"]["simple"]["supported_devices"]
+-- 
+2.34.1
+

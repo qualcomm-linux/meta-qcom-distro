@@ -1,0 +1,110 @@
+From ed7b3adbf9912248ee87c202edcd4905e5d85823 Mon Sep 17 00:00:00 2001
+From: Hans de Goede <johannes.goede@oss.qualcomm.com>
+Date: Fri, 30 Oct 2026 15:19:35 +0100
+Subject: [PATCH 1/2] libcamera: software_isp: Add AllocCmaDmaBuffers
+ constructor flag
+
+Allocating DMA buffers from the CMA pool is not necessary on platforms
+where the expected consumers (GPU, video-encoder) support non contiguous
+memory and allocating the buffers from the limited CMA pool may cause
+starvation of that pool for other processes which do actually require CMA.
+
+Add a new "SoftwareIspFlags flags" parameter to the SoftwareIsp()
+constructor, implement a single AllocCmaDmaBuffers flag for now and only
+request CmaHeap backed DmaBuffers when this flag is set.
+
+The only SoftwareIsp() constructor caller is modified to pass the new flag
+so this patch does not cause any behavior change.
+
+clang-format wants to make the lines with the "flags ? cma : none" code one
+single long line, so disable it for the dmaHeap_() initialization.
+
+Signed-off-by: Hans de Goede <johannes.goede@oss.qualcomm.com>
+Upstream-Status: Submitted [https://lists.libcamera.org/pipermail/libcamera-devel/2026-October/063202.html]
+---
+ .../libcamera/internal/software_isp/software_isp.h    |  9 ++++++++-
+ src/libcamera/pipeline/simple/simple.cpp              |  4 +++-
+ src/libcamera/software_isp/software_isp.cpp           | 11 ++++++++---
+ 3 files changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/include/libcamera/internal/software_isp/software_isp.h b/include/libcamera/internal/software_isp/software_isp.h
+index 4f72dce9b..66eeee63b 100644
+--- a/include/libcamera/internal/software_isp/software_isp.h
++++ b/include/libcamera/internal/software_isp/software_isp.h
+@@ -17,6 +17,7 @@
+ #include <vector>
+ 
+ #include <libcamera/base/class.h>
++#include <libcamera/base/flags.h>
+ #include <libcamera/base/log.h>
+ #include <libcamera/base/object.h>
+ #include <libcamera/base/signal.h>
+@@ -47,8 +48,14 @@ LOG_DECLARE_CATEGORY(SoftwareIsp)
+ class SoftwareIsp : public Object
+ {
+ public:
++	enum class SoftwareIspFlag {
++		AllocCmaDmaBuffers = 1 << 0,
++	};
++
++	using SoftwareIspFlags = Flags<SoftwareIspFlag>;
++
+ 	SoftwareIsp(PipelineHandler *pipe, const CameraSensor *sensor,
+-		    ControlInfoMap *ipaControls);
++		    SoftwareIspFlags flags, ControlInfoMap *ipaControls);
+ 	~SoftwareIsp();
+ 
+ 	int loadConfiguration([[maybe_unused]] const std::string &filename) { return 0; }
+diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
+index e26f438d9..d2ce65978 100644
+--- a/src/libcamera/pipeline/simple/simple.cpp
++++ b/src/libcamera/pipeline/simple/simple.cpp
+@@ -615,7 +615,9 @@ int SimpleCameraData::init()
+ 	 * Instantiate Soft ISP if this is enabled for the given driver and no converter is used.
+ 	 */
+ 	if (!converter_ && pipe->swIspEnabled()) {
+-		swIsp_ = std::make_unique<SoftwareIsp>(pipe, sensor_.get(), &controlInfo_);
++		swIsp_ = std::make_unique<SoftwareIsp>(pipe, sensor_.get(),
++						       SoftwareIsp::SoftwareIspFlag::AllocCmaDmaBuffers,
++						       &controlInfo_);
+ 		if (!swIsp_->isValid()) {
+ 			LOG(SimplePipeline, Warning)
+ 				<< "Failed to create software ISP, disabling software debayering";
+diff --git a/src/libcamera/software_isp/software_isp.cpp b/src/libcamera/software_isp/software_isp.cpp
+index c73a16ce0..fc9c6452e 100644
+--- a/src/libcamera/software_isp/software_isp.cpp
++++ b/src/libcamera/software_isp/software_isp.cpp
+@@ -24,6 +24,7 @@
+ #include <libcamera/stream.h>
+ 
+ #include "libcamera/internal/bayer_format.h"
++#include "libcamera/internal/dma_buf_allocator.h"
+ #include "libcamera/internal/framebuffer.h"
+ #include "libcamera/internal/software_isp/debayer_params.h"
+ 
+@@ -76,15 +77,19 @@ LOG_DEFINE_CATEGORY(SoftwareIsp)
+  * \brief Constructs SoftwareIsp object
+  * \param[in] pipe The pipeline handler in use
+  * \param[in] sensor Pointer to the CameraSensor instance owned by the pipeline
++ * \param[in] flags SoftwareIspFlags
+  * \param[out] ipaControls The IPA controls to update
+  * handler
+  */
+ SoftwareIsp::SoftwareIsp(PipelineHandler *pipe, const CameraSensor *sensor,
+-			 ControlInfoMap *ipaControls)
++			 SoftwareIspFlags flags, ControlInfoMap *ipaControls)
+ 	: ispWorkerThread_("SWIspWorker"),
+-	  dmaHeap_(DmaBufAllocator::DmaBufAllocatorFlag::CmaHeap |
++	  /* clang-format off */
++	  dmaHeap_(DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf |
+ 		   DmaBufAllocator::DmaBufAllocatorFlag::SystemHeap |
+-		   DmaBufAllocator::DmaBufAllocatorFlag::UDmaBuf)
++		   ((flags & SoftwareIsp::SoftwareIspFlag::AllocCmaDmaBuffers) ?
++		    DmaBufAllocator::DmaBufAllocatorFlag::CmaHeap :
++		    DmaBufAllocator::DmaBufAllocatorFlag{})) /* clang-format on */
+ {
+ 	if (!dmaHeap_.isValid()) {
+ 		LOG(SoftwareIsp, Error) << "Failed to create DmaBufAllocator object";
+-- 
+2.34.1
+
