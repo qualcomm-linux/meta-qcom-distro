@@ -12,4 +12,5 @@ RDEPENDS:${PN} += " \
 # qemu 11.0.0 only supports 64-bit hosts
 RDEPENDS:${PN}:append:aarch64 = " \
     qemu \
+    swtpm \
     "
