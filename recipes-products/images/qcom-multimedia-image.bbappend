@@ -43,6 +43,7 @@ INCOMPATIBLE_LICENSE_EXCEPTIONS = "\
     firmware-qcom-boot-qrb2210-rb1:LICENSE.qcom \
     firmware-qcom-boot-shikra:LICENSE.qcom-2 \
     firmware-qcom-boot-sm8750:LICENSE.qcom-2 \
+    qtee-tas:LICENSE.qcom-2 \
     trusted-firmware-a-qcom:LICENSE.qcom \
     trusted-firmware-a-qcom-rb3gen2:LICENSE.qcom \
 "
