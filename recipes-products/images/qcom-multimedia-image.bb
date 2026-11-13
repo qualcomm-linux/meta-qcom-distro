@@ -22,6 +22,7 @@ CORE_IMAGE_BASE_INSTALL += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'virtualization', 'packagegroup-container', '', d)} \
     packagegroup-qcom-benchmark \
     packagegroup-qcom-quickboot \
+    packagegroup-qcom-quickboot-tests \
     packagegroup-qcom-test-pkgs \
     packagegroup-qcom-utilities-gpu-utils \
     pipewire \
@@ -42,8 +43,13 @@ CORE_IMAGE_BASE_INSTALL += " \
     wireplumber \
 "
 
-# IMSDK currently only used and tested on ARMv8 (aarch64) machines.
-CORE_IMAGE_BASE_INSTALL:append:aarch64 = " gst-plugins-imsdk-oss gst-plugins-imsdk-python"
+# IMSDK and the CAMSS camera test recipes are limited to ARMv8 (aarch64).
+CORE_IMAGE_BASE_INSTALL:append:aarch64 = " \
+    gst-plugins-imsdk-oss \
+    gst-plugins-imsdk-python \
+    quickboot-camera-preview-camss \
+    quickboot-camera-readiness-camss \
+"
 
 # let's make sure we have a good image.
 REQUIRED_DISTRO_FEATURES += "wayland"

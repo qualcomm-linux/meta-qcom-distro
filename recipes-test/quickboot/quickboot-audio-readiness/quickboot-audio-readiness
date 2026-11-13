@@ -1,0 +1,44 @@
+#!/bin/sh
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# This test plays an audio sample through PipeWire and logs status to the
+# system journal for boot-time correlation.
+
+set -eu
+
+APP_NAME="quickboot-audio-readiness"
+
+log() {
+    printf '%s: %s\n' "$APP_NAME" "$*"
+}
+
+boot_time() {
+    awk '{ print $1 }' /proc/uptime
+}
+
+if [ "$#" -ne 1 ]; then
+    log "Usage: $0 <audio-file>"
+    exit 2
+fi
+
+AUDIO_FILE="$1"
+
+if [ ! -r "$AUDIO_FILE" ]; then
+    log "Audio file is not readable: $AUDIO_FILE"
+    exit 1
+fi
+
+START_TIME=$(boot_time)
+log "Starting playback: file=$AUDIO_FILE sink=default"
+
+if pw-play "$AUDIO_FILE"; then
+    END_TIME=$(boot_time)
+    DURATION=$(awk -v start="$START_TIME" -v end="$END_TIME" \
+        'BEGIN { printf "%.3f", end - start }')
+    log "Playback completed in ${DURATION}s"
+else
+    status=$?
+    log "Playback failed with exit code: $status"
+    exit "$status"
+fi
