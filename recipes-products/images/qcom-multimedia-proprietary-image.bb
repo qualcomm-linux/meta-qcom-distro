@@ -19,7 +19,8 @@ CORE_IMAGE_BASE_INSTALL += " \
     gst-plugins-imsdk-prop \
     iris-video-dlkm \
     kgsl-dlkm \
-    libdiag-bin \
+    diag \
+    diag-router \
     onnxruntime-qnn \
     qcom-adreno \
     qcom-sensors-binaries \
