@@ -1,0 +1,4 @@
+# Start the camera server once CAMX has registered its camera-request-manager
+# V4L2 node. SYSTEMD_ALIAS provides a stable systemd device-unit name even if
+# the kernel-assigned video node number changes.
+SUBSYSTEM=="video4linux", ACTION=="add", ATTR{name}=="cam-req-mgr", TAG+="systemd", ENV{SYSTEMD_READY}="1", ENV{SYSTEMD_ALIAS}+="/dev/cam_req_mgr", ENV{SYSTEMD_WANTS}+="qti-cam-server.service"
