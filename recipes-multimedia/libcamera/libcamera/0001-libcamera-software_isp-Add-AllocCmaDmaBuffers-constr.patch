@@ -1,4 +1,4 @@
-From ed7b3adbf9912248ee87c202edcd4905e5d85823 Mon Sep 17 00:00:00 2001
+From 4a074397337b26422c48136b341594a9c35e7fe7 Mon Sep 17 00:00:00 2001
 From: Hans de Goede <johannes.goede@oss.qualcomm.com>
 Date: Fri, 30 Oct 2026 15:19:35 +0100
 Subject: [PATCH 1/2] libcamera: software_isp: Add AllocCmaDmaBuffers
@@ -28,7 +28,7 @@ Upstream-Status: Submitted [https://lists.libcamera.org/pipermail/libcamera-deve
  3 files changed, 19 insertions(+), 5 deletions(-)
 
 diff --git a/include/libcamera/internal/software_isp/software_isp.h b/include/libcamera/internal/software_isp/software_isp.h
-index 4f72dce9b..66eeee63b 100644
+index b6491063..2790e738 100644
 --- a/include/libcamera/internal/software_isp/software_isp.h
 +++ b/include/libcamera/internal/software_isp/software_isp.h
 @@ -17,6 +17,7 @@
@@ -56,10 +56,10 @@ index 4f72dce9b..66eeee63b 100644
  
  	int loadConfiguration([[maybe_unused]] const std::string &filename) { return 0; }
 diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
-index e26f438d9..d2ce65978 100644
+index 35e06649..b645227b 100644
 --- a/src/libcamera/pipeline/simple/simple.cpp
 +++ b/src/libcamera/pipeline/simple/simple.cpp
-@@ -615,7 +615,9 @@ int SimpleCameraData::init()
+@@ -618,7 +618,9 @@ int SimpleCameraData::init()
  	 * Instantiate Soft ISP if this is enabled for the given driver and no converter is used.
  	 */
  	if (!converter_ && pipe->swIspEnabled()) {
@@ -71,7 +71,7 @@ index e26f438d9..d2ce65978 100644
  			LOG(SimplePipeline, Warning)
  				<< "Failed to create software ISP, disabling software debayering";
 diff --git a/src/libcamera/software_isp/software_isp.cpp b/src/libcamera/software_isp/software_isp.cpp
-index c73a16ce0..fc9c6452e 100644
+index 627625b4..8ab114f6 100644
 --- a/src/libcamera/software_isp/software_isp.cpp
 +++ b/src/libcamera/software_isp/software_isp.cpp
 @@ -24,6 +24,7 @@
@@ -82,13 +82,12 @@ index c73a16ce0..fc9c6452e 100644
  #include "libcamera/internal/framebuffer.h"
  #include "libcamera/internal/software_isp/debayer_params.h"
  
-@@ -76,15 +77,19 @@ LOG_DEFINE_CATEGORY(SoftwareIsp)
+@@ -76,14 +77,18 @@ LOG_DEFINE_CATEGORY(SoftwareIsp)
   * \brief Constructs SoftwareIsp object
   * \param[in] pipe The pipeline handler in use
-  * \param[in] sensor Pointer to the CameraSensor instance owned by the pipeline
+  * \param[in] sensor Pointer to the CameraSensor instance owned by the pipeline handler
 + * \param[in] flags SoftwareIspFlags
   * \param[out] ipaControls The IPA controls to update
-  * handler
   */
  SoftwareIsp::SoftwareIsp(PipelineHandler *pipe, const CameraSensor *sensor,
 -			 ControlInfoMap *ipaControls)
@@ -106,5 +105,5 @@ index c73a16ce0..fc9c6452e 100644
  	if (!dmaHeap_.isValid()) {
  		LOG(SoftwareIsp, Error) << "Failed to create DmaBufAllocator object";
 -- 
-2.34.1
+2.43.0
 
