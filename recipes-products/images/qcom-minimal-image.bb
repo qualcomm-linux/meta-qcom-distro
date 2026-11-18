@@ -2,7 +2,7 @@ SUMMARY = "Minimal image"
 
 LICENSE = "BSD-3-Clause-Clear"
 
-IMAGE_FEATURES += "splash tools-debug allow-root-login post-install-logging"
+IMAGE_FEATURES += "splash tools-debug allow-root-login post-install-logging read-only-rootfs"
 
 inherit core-image features_check extrausers image-adbd
 
