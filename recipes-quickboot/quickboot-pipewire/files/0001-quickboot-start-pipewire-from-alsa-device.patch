@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wenwen Fu <wenwfu@qti.qualcomm.com>
+Date: Wed, 14 Oct 2026 00:00:00 +0800
+Subject: [PATCH] pipewire: start from the primary ALSA device event
+
+The system PipeWire service inherits dependencies on sysinit.target and
+basic.target, which delay it after the primary ALSA control device is
+registered.
+
+Make the unit suitable for QuickBoot activation. The service is wanted by
+the controlC0 udev add event and starts after its device unit becomes
+active. Keep explicit shutdown ordering because DefaultDependencies=no
+removes the normal service shutdown dependencies.
+
+Upstream-Status: Inappropriate [QuickBoot activation is distro policy]
+
+Signed-off-by: Wenwen Fu <wenwfu@qti.qualcomm.com>
+---
+ src/daemon/systemd/system/pipewire.service.in | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/daemon/systemd/system/pipewire.service.in b/src/daemon/systemd/system/pipewire.service.in
+index aeddea3..0127f0b 100644
+--- a/src/daemon/systemd/system/pipewire.service.in
++++ b/src/daemon/systemd/system/pipewire.service.in
+@@ -1,5 +1,10 @@
+ [Unit]
+ Description=PipeWire Multimedia Service
++DefaultDependencies=no
++Wants=dev-snd-controlC0.device
++After=dev-snd-controlC0.device
++Conflicts=shutdown.target
++Before=shutdown.target
+ 
+ # We require pipewire.socket to be active before starting the daemon, because
+ # while it is possible to use the service without the socket, it is not clear
+--
+2.43.0

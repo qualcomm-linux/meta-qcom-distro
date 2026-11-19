@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wenwen Fu <wenwfu@qti.qualcomm.com>
+Date: Wed, 14 Oct 2026 00:00:00 +0800
+Subject: [PATCH] weston: start from the primary DRM device event
+
+The default Weston unit is enabled by graphical.target and therefore waits
+for the regular boot target chain. Start it from the primary DRM device
+event instead, so Weston is launched as soon as the display device is ready.
+
+DefaultDependencies is disabled for QuickBoot activation. Keep explicit
+shutdown ordering because the normal service dependencies are no longer
+added automatically.
+
+Upstream-Status: Inappropriate [QuickBoot activation is distro policy]
+
+Signed-off-by: Wenwen Fu <wenwfu@qti.qualcomm.com>
+---
+ weston.service | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/weston.service b/weston.service
+index b7e845e..66006dd 100644
+--- a/weston.service
++++ b/weston.service
+@@ -7,0 +8 @@ Description=Weston, a Wayland compositor, as a system service
++DefaultDependencies=no
+@@ -13 +14,2 @@ Requires=systemd-user-sessions.service
+-After=systemd-user-sessions.service
++#After=systemd-user-sessions.service
++After=dev-dri-card0.device
+@@ -16 +18 @@ After=systemd-user-sessions.service
+-After=plymouth-quit-wait.service
++#After=plymouth-quit-wait.service
+@@ -20 +22 @@ Wants=dbus.socket
+-After=dbus.socket
++#After=dbus.socket
+@@ -27,0 +30,2 @@ Before=graphical.target
++Conflicts=shutdown.target
++Before=shutdown.target
+@@ -33,5 +39,6 @@ ConditionPathExists=/dev/tty0
+ [Service]
++Restart=on-failure
+ # Requires systemd-notify.so Weston plugin.
+ Type=notify
+ EnvironmentFile=@sysconfdir@/default/weston
+ ExecStart=@bindir@/weston --modules=systemd-notify.so
