@@ -9,8 +9,12 @@ do_install:append:qcom-distro() {
 
 FILES:${PN}-apps:append:qcom-distro = " ${datadir}/qdemo/weston-qdemo-launcher.ini"
 
-pkg_postinst_ontarget:${PN}-apps:qcom-distro() {
-    cat /usr/share/qdemo/weston-qdemo-launcher.ini >> /etc/xdg/weston/weston.ini
+# The launcher entry is appended to weston.ini, which weston-init installs:
+# make sure weston-init is installed first.
+RDEPENDS:${PN}-apps:append:qcom-distro = " weston-init"
+
+pkg_postinst:${PN}-apps:qcom-distro() {
+    cat $D${datadir}/qdemo/weston-qdemo-launcher.ini >> $D${sysconfdir}/xdg/weston/weston.ini
 }
 
 pkg_postrm_ontarget:${PN}-apps:qcom-distro() {
