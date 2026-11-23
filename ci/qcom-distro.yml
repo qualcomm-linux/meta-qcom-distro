@@ -50,7 +50,7 @@ repos:
     url: https://git.yoctoproject.org/meta-security
     patches:
       tpm2-openssl-openssl-4.1:
-        repo: meta-qcom
+        repo: meta-qcom-distro
         path: patches/meta-security/0001-tpm2-openssl-Fix-build-with-OpenSSL-4.1.patch
     layers:
       .:
