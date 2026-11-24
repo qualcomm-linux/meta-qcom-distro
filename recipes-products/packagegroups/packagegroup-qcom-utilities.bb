@@ -25,6 +25,7 @@ RDEPENDS:${PN} = " \
 RDEPENDS:${PN}-bluetooth-utils = " \
     bluez5-obex \
     bluez5-noinst-tools \
+    python3-dbus \
     "
 
 RDEPENDS:${PN}-debug-utils = " \
