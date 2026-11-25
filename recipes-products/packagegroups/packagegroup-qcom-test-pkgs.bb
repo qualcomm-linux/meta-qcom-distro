@@ -19,6 +19,7 @@ RDEPENDS:${PN} = "\
     opencv-apps \
     openssh-sftp-server \
     pulseaudio-misc \
+    python3-dbus \
     rng-tools \
     sigma-dut \
     sox \
