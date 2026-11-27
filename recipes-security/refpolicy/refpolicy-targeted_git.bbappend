@@ -15,3 +15,5 @@ POLICY_BOOLEANS:append:qcom-distro = " \
         'dockerd_connect_user_services=true \
          dockerd_mounton_xdg_downloads=true', '', d)} \
 "
+
+POLICY_CUSTOM_BUILDOPT:append:qcom-distro = " pipewire_system_service"
