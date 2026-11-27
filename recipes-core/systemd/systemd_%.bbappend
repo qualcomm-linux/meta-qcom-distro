@@ -1,5 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+PACKAGECONFIG:append:qcom-distro = " pstore"
+
 SRC_URI:append:qcom-distro = " file://dmaheap-sysusers.conf"
 
 do_install:append:qcom-distro() {
