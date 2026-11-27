@@ -1,0 +1,63 @@
+From 137d172bc90bc2cd6fedb0994c091cf8631905b9 Mon Sep 17 00:00:00 2001
+From: Niranjan Reddy Mekala <nirameka@qti.qualcomm.com>
+Date: Wed, 18 Nov 2026 15:51:38 -0800
+Subject: [PATCH] virt: allow libvirt mount namespace cleanup
+
+Upstream-Status: Submitted [https://github.com/SELinuxProject/refpolicy/pull/1289]
+
+Libvirt creates per-domain runtime mount namespaces under
+/run/libvirt/qemu and mounts filesystems such as tmpfs,
+devpts, hugetlbfs and device-backed filesystems.
+
+During guest startup failure handling and domain lifecycle
+cleanup, libvirt unmounts these filesystems before removing
+the associated runtime directories. In SELinux enforcing
+mode, the required filesystem unmount permissions are denied,
+resulting in AVCs such as:
+
+  avc: denied { unmount } for comm="rpc-libvirtd"
+  scontext=system_u:system_r:virtd_t:s0
+
+Without these permissions, libvirt cannot unmount the
+per-domain runtime mounts, cleanup of runtime mount
+namespaces fails, and busy mount points remain under
+/run/libvirt/qemu. This can result in failures such as:
+
+  Cannot delete directory
+  /run/libvirt/qemu/<domain>.shm:
+  Device or resource busy
+
+Allow virtd_t to unmount the filesystem types observed
+during libvirt runtime namespace cleanup, specifically
+device_t, tmpfs_t, hugetlbfs_t and devpts_t.
+
+Validated using libvirt, qemu-system-aarch64 and a
+TPM-enabled Windows 11 ARM64 guest under SELinux
+enforcing mode.
+
+Signed-off-by: Niranjan Reddy Mekala <nirameka@qti.qualcomm.com>
+---
+ policy/modules/services/virt.te | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/policy/modules/services/virt.te b/policy/modules/services/virt.te
+index 7e6cff62b..75f108d4e 100644
+--- a/policy/modules/services/virt.te
++++ b/policy/modules/services/virt.te
+@@ -674,6 +674,13 @@ fs_rw_hugetlbfs_files(virtd_t)
+ fs_read_nsfs_files(virtd_t)
+ fs_mount_tmpfs(virtd_t)
+ 
++# libvirt unmounts per-domain runtime filesystems during
++# guest startup failure handling and mount namespace cleanup
++allow virtd_t device_t:filesystem unmount;
++allow virtd_t tmpfs_t:filesystem unmount;
++allow virtd_t hugetlbfs_t:filesystem unmount;
++allow virtd_t devpts_t:filesystem unmount;
++
+ mls_fd_share_all_levels(virtd_t)
+ mls_file_read_to_clearance(virtd_t)
+ mls_file_write_to_clearance(virtd_t)
+-- 
+2.43.0
+
