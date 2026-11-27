@@ -1,0 +1,2 @@
+# Start PipeWire once the primary ALSA control device is available.
+ACTION=="add", SUBSYSTEM=="sound", KERNEL=="controlC0", TAG+="systemd", ENV{SYSTEMD_READY}="1", ENV{SYSTEMD_WANTS}+="pipewire.service"
