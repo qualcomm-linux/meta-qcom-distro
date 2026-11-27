@@ -1,0 +1,26 @@
+name: Weekly Build Dispatcher (wrynose)
+
+on:
+  schedule:
+  # GitHub only runs scheduled workflows from the default branch, so the
+  # weekly build of wrynose is dispatched from here against that branch.
+  # At 6:00 UTC on Sunday - kept 3 hours after the main weekly build
+  # (3:00 UTC) so the two branches do not build at the same time.
+  - cron: "0 6 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-build:
+    if: github.repository_owner == 'qualcomm-linux'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Trigger Weekly Build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh workflow run --repo "${GH_REPO}" --ref wrynose weekly.yml

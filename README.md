@@ -1,6 +1,9 @@
 # meta-qcom-distro
 
 [![Build on push](https://img.shields.io/github/actions/workflow/status/qualcomm-linux/meta-qcom-distro/push.yml?label=Build%20on%20push)](https://github.com/qualcomm-linux/meta-qcom-distro/actions/workflows/push.yml)
+[![Weekly Build (main)](https://img.shields.io/github/actions/workflow/status/qualcomm-linux/meta-qcom-distro/weekly.yml?label=Weekly%20Build%20(main))](https://github.com/qualcomm-linux/meta-qcom-distro/actions/workflows/weekly.yml)
+
+[![Weekly Build (wrynose)](https://img.shields.io/github/actions/workflow/status/qualcomm-linux/meta-qcom-distro/weekly.yml?branch=wrynose&label=Weekly%20Build%20(wrynose))](https://github.com/qualcomm-linux/meta-qcom-distro/actions/workflows/weekly.yml?query=branch%3Awrynose)
 
 ## Introduction
 
